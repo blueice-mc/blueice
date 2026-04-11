@@ -14,11 +14,13 @@ func main() {
 	ex, _ := os.Executable()
 	path := filepath.Dir(ex)
 
-	serverConfig, _ := config.InitializeServerConfig(path)
+	serverConfig := config.ServerConfig{}
 
-	log.Println(serverConfig)
-
-	minecraftServer := server.NewMinecraftServer(25565)
+	if err := config.InitializeServerConfig(path+"/config.toml", &serverConfig); err != nil {
+		log.Fatal("Could not read or create server config", err)
+	}
+	
+	minecraftServer := server.NewMinecraftServer(serverConfig)
 	err := minecraftServer.Start()
 
 	if err != nil {

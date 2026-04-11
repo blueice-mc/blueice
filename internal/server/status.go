@@ -4,13 +4,17 @@ import (
 	"BlueIce/internal/protocol"
 	"bytes"
 	"log"
+	"strconv"
 )
 
 func HandleStatusRequest(client *Client, payload []byte) {
+	motd := client.Server.Config.Server.MOTD
+	maxPlayers := client.Server.Config.Server.MaxPlayers
+
 	responseJson := protocol.NewString(`{
         "version": {"name": "26.1.2", "protocol": 775},
-        "players": {"max": 100, "online": 5},
-        "description": {"text": "§7Another §bBlue§9Ice §7server"}
+        "players": {"max": ` + strconv.Itoa(int(maxPlayers)) + `, "online": 0},
+        "description": {"text": "` + motd + `"}
     }`)
 
 	statusPacket := protocol.StatusPacketOutbound{

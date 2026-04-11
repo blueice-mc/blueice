@@ -1,6 +1,7 @@
 package server
 
 import (
+	"BlueIce/internal/config"
 	"fmt"
 	"log"
 	"net"
@@ -17,16 +18,16 @@ type PacketKey struct {
 }
 
 type MinecraftServer struct {
-	Port uint16
+	Config config.ServerConfig
 
 	mu              sync.RWMutex
 	Clients         []*Client
 	PacketListeners map[PacketKey][]PacketListener
 }
 
-func NewMinecraftServer(port uint16) *MinecraftServer {
+func NewMinecraftServer(serverConfig config.ServerConfig) *MinecraftServer {
 	minecraftServer := MinecraftServer{
-		Port:            port,
+		Config:          serverConfig,
 		Clients:         make([]*Client, 0),
 		PacketListeners: make(map[PacketKey][]PacketListener),
 	}
@@ -40,7 +41,8 @@ func NewMinecraftServer(port uint16) *MinecraftServer {
 }
 
 func (server *MinecraftServer) Start() error {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", server.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", server.Config.Server.Port))
+	log.Println("Listening on", listener.Addr())
 
 	if err != nil {
 		return err

@@ -19,22 +19,21 @@ type ServerConfig struct {
 //go:embed default_config.toml
 var defaultConfigFile []byte
 
-func InitializeServerConfig(path string) (ServerConfig, error) {
+func InitializeServerConfig(path string, config *ServerConfig) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Println("Config file does not exist, exporting default config...")
 
 		err := os.WriteFile(path, defaultConfigFile, 0644)
 		if err != nil {
-			log.Fatal("Could not create default config", err)
+			return err
 		}
 	} else if err != nil {
-		log.Fatal("Could not open config file", err)
+		return err
 	}
 
-	var config ServerConfig
-	if _, err := toml.DecodeFile(path, &config); err != nil {
-		log.Fatal("Could not decode config file", err)
+	if _, err := toml.DecodeFile(path, config); err != nil {
+		return err
 	}
 
-	return config, nil
+	return nil
 }
