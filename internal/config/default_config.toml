@@ -1,0 +1,6 @@
+# This server configuration file replaces the server.properties
+
+[server]
+port = 25565
+max_players = 20
+motd = "Another BlueIce server"
