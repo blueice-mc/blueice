@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"encoding/binary"
 	"errors"
 	"io"
 )
@@ -139,44 +140,250 @@ func (v *VarLong) ReadFrom(r io.Reader) (int64, error) {
 	return size, nil
 }
 
-type String []byte
+type PrefixedArray[T any] struct {
+	Length  VarInt
+	Content []T
 
-func (s String) WriteTo(w io.Writer) (int64, error) {
-	str := []byte(s)
+	Writer func(io.Writer, T) (int64, error)
+	Reader func(io.Reader, *T) (int64, error)
+}
 
-	length := int32(len(str))
+func (p *PrefixedArray[T]) WriteTo(w io.Writer) (int64, error) {
+	p.Length = VarInt(len(p.Content))
 
-	n, err := VarInt(length).WriteTo(w)
+	size, err := p.Length.WriteTo(w)
+	if err != nil {
+		return size, err
+	}
+
+	for _, element := range p.Content {
+		n, err := p.Writer(w, element)
+		size += int64(n)
+		if err != nil {
+			return size, err
+		}
+	}
+
+	return size, nil
+}
+
+func (p *PrefixedArray[T]) ReadFrom(r io.Reader) (int64, error) {
+	size, err := p.Length.ReadFrom(r)
+
 	if err != nil {
 		return 0, err
 	}
 
-	m, err := w.Write(str[:])
+	p.Content = make([]T, p.Length)
+	for i := range p.Content {
+		var element T
+		n, err := p.Reader(r, &element)
+		size += int64(n)
+		if err != nil {
+			return size, err
+		}
+		p.Content[i] = element
+	}
 
-	return n + int64(m), nil
+	return size, nil
+}
+
+type String PrefixedArray[byte]
+
+func NewString(s string) String {
+	return String{
+		Length:  VarInt(len(s)),
+		Content: []byte(s),
+	}
+}
+
+func (s *String) WriteTo(w io.Writer) (int64, error) {
+	if s.Writer == nil {
+		s.Writer = func(w io.Writer, b byte) (int64, error) {
+			n, err := w.Write([]byte{b})
+			return int64(n), err
+		}
+	}
+
+	return (*PrefixedArray[byte])(s).WriteTo(w)
 }
 
 func (s *String) ReadFrom(r io.Reader) (int64, error) {
-	var length VarInt
+	if s.Reader == nil {
+		s.Reader = func(r io.Reader, b *byte) (int64, error) {
+			buf := make([]byte, 1)
+			n, err := r.Read(buf)
+			*b = buf[0]
+			return int64(n), err
+		}
+	}
 
-	n, err := length.ReadFrom(r)
+	return (*PrefixedArray[byte])(s).ReadFrom(r)
+}
 
+type PrefixedOptional[T any] struct {
+	Present bool
+	Content T
+
+	Writer func(io.Writer, T) (int64, error)
+	Reader func(io.Reader, *T) (int64, error)
+}
+
+func (p *PrefixedOptional[T]) WriteTo(w io.Writer) (int64, error) {
+	if p.Present {
+		size, err := w.Write([]byte{1})
+		if err != nil {
+			return int64(size), err
+		}
+
+		if p.Writer == nil {
+			return int64(size), errors.New("writer is nil even though field is present")
+		}
+
+		n, err := p.Writer(w, p.Content)
+		size += int(n)
+		return int64(size), err
+	} else {
+		size, err := w.Write([]byte{0})
+		if err != nil {
+			return int64(size), err
+		}
+		return int64(size), err
+	}
+}
+
+func (p *PrefixedOptional[T]) ReadFrom(r io.Reader) (int64, error) {
+	size := 0
+
+	err := binary.Read(r, binary.BigEndian, &p.Present)
+	size += 1
 	if err != nil {
-		return 0, err
+		return int64(size), err
 	}
 
-	if length > 32768 {
-		return 0, errors.New("String is too long (max 32768 bytes)")
+	if p.Present {
+		if p.Reader == nil {
+			return int64(size), errors.New("reader is nil even though field is present")
+		}
+
+		n, err := p.Reader(r, &p.Content)
+		size += int(n)
+		if err != nil {
+			return int64(size), err
+		}
 	}
 
-	buf := make([]byte, length)
-	m, err := io.ReadFull(r, buf)
+	return int64(size), err
+}
 
+type GameProfile struct {
+	UUID    [16]byte
+	Name    String
+	Options PrefixedArray[GameProfileOption]
+}
+
+func (p *GameProfile) WriteTo(w io.Writer) (int64, error) {
+	size, err := w.Write(p.UUID[:])
 	if err != nil {
-		return 0, err
+		return int64(size), err
 	}
 
-	*s = String(buf)
+	n, err := p.Name.WriteTo(w)
+	size += int(n)
+	if err != nil {
+		return int64(size), err
+	}
 
-	return n + int64(m), nil
+	p.Options.Writer = func(w io.Writer, gpo GameProfileOption) (int64, error) {
+		return gpo.WriteTo(w)
+	}
+
+	n, err = p.Options.WriteTo(w)
+	size += int(n)
+	if err != nil {
+		return int64(size), err
+	}
+
+	return int64(size), nil
+}
+
+func (p *GameProfile) ReadFrom(r io.Reader) (int64, error) {
+	size, err := r.Read(p.UUID[:])
+	if err != nil {
+		return int64(size), err
+	}
+
+	n, err := p.Name.ReadFrom(r)
+	size += int(n)
+	if err != nil {
+		return int64(size), err
+	}
+
+	p.Options.Reader = func(r io.Reader, gpo *GameProfileOption) (int64, error) {
+		return gpo.ReadFrom(r)
+	}
+
+	n, err = p.Options.ReadFrom(r)
+	size += int(n)
+	if err != nil {
+		return int64(size), err
+	}
+
+	return int64(size), nil
+}
+
+type GameProfileOption struct {
+	Name      String
+	Value     String
+	Signature PrefixedOptional[String]
+}
+
+func (gpo *GameProfileOption) WriteTo(w io.Writer) (int64, error) {
+	size, err := gpo.Name.WriteTo(w)
+	if err != nil {
+		return size, err
+	}
+
+	n, err := gpo.Value.WriteTo(w)
+	size += n
+	if err != nil {
+		return size, err
+	}
+
+	gpo.Signature.Writer = func(w io.Writer, s String) (int64, error) {
+		return s.WriteTo(w)
+	}
+
+	n, err = gpo.Signature.WriteTo(w)
+	size += n
+	if err != nil {
+		return size, err
+	}
+
+	return size, nil
+}
+
+func (gpo *GameProfileOption) ReadFrom(r io.Reader) (int64, error) {
+	size, err := gpo.Name.ReadFrom(r)
+	if err != nil {
+		return size, err
+	}
+
+	n, err := gpo.Value.ReadFrom(r)
+	size += n
+	if err != nil {
+		return size, err
+	}
+
+	gpo.Signature.Reader = func(r io.Reader, s *String) (int64, error) {
+		return s.ReadFrom(r)
+	}
+
+	n, err = gpo.Signature.ReadFrom(r)
+	size += n
+	if err != nil {
+		return size, err
+	}
+
+	return size, nil
 }

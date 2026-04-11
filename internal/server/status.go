@@ -7,9 +7,7 @@ import (
 )
 
 func HandleStatusRequest(client *Client, payload []byte) {
-	log.Println("Received status request, sending JSON...")
-
-	responseJson := []byte(`{
+	responseJson := protocol.NewString(`{
         "version": {"name": "26.1.2", "protocol": 775},
         "players": {"max": 100, "online": 5},
         "description": {"text": "§7Another §bBlue§9Ice §7server"}
@@ -25,8 +23,6 @@ func HandleStatusRequest(client *Client, payload []byte) {
 }
 
 func HandlePingRequest(client *Client, payload []byte) {
-	log.Println("Received ping request")
-
 	var pingPacket protocol.PingPacketInboundOutbound
 
 	if _, err := pingPacket.ReadFrom(bytes.NewBuffer(payload)); err != nil {

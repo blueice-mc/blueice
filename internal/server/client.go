@@ -60,8 +60,6 @@ func (client *Client) Handle() {
 			break
 		}
 
-		log.Printf("Read packet with ID %d", packetID)
-
 		key := PacketKey{
 			State:    client.State,
 			PacketID: uint32(packetID),

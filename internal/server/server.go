@@ -34,6 +34,7 @@ func NewMinecraftServer(port uint16) *MinecraftServer {
 	minecraftServer.RegisterPacketListener(0, 0x00, HandleHandshake)
 	minecraftServer.RegisterPacketListener(1, 0x00, HandleStatusRequest)
 	minecraftServer.RegisterPacketListener(1, 0x01, HandlePingRequest)
+	minecraftServer.RegisterPacketListener(2, 0x00, HandleLoginStart)
 
 	return &minecraftServer
 }
