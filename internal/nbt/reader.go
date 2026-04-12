@@ -10,32 +10,6 @@ import (
 	"unsafe"
 )
 
-var structCache = make(map[reflect.Type]map[string]int)
-
-func mapFields(t reflect.Type) map[string]int {
-	m, ok := structCache[t]
-
-	if ok {
-		return m
-	}
-
-	m = make(map[string]int)
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		tag := field.Tag.Get("nbt")
-
-		if len(tag) == 0 {
-			tag = field.Name
-		}
-
-		m[tag] = i
-	}
-
-	structCache[t] = m
-	return m
-}
-
 func readByte(r io.Reader, v reflect.Value) (int64, error) {
 	var b int8
 
@@ -90,7 +64,7 @@ func readLong(r io.Reader, v reflect.Value) (int64, error) {
 
 	field := v.Elem()
 	if field.CanSet() {
-		field.SetInt(int64(l))
+		field.SetInt(l)
 	}
 
 	return 8, nil
@@ -228,7 +202,7 @@ func readString(r io.Reader, v reflect.Value) (int64, error) {
 }
 
 func readList(r io.Reader, v reflect.Value) (int64, error) {
-	var typeId int8
+	var typeId TagType
 	if err := binary.Read(r, binary.BigEndian, &typeId); err != nil {
 		return 0, err
 	}
@@ -261,14 +235,14 @@ func readCompound(r io.Reader, vPtr reflect.Value) (int64, error) {
 	fieldMap := mapFields(v.Type())
 
 	for {
-		var typeId int8
+		var typeId TagType
 		if err := binary.Read(r, binary.BigEndian, &typeId); err != nil {
 			return size, err
 		}
 		size++
 
-		if typeId == 0x00 {
-			break // Type 0x00 is TAG_End
+		if typeId == TagEnd {
+			break
 		}
 
 		var nameLength uint16
@@ -304,44 +278,44 @@ func readCompound(r io.Reader, vPtr reflect.Value) (int64, error) {
 	return size, nil
 }
 
-func skip(r io.Reader, typeId int8) (int64, error) {
+func skip(r io.Reader, typeId TagType) (int64, error) {
 	switch typeId {
-	case 0x01: // TAG_Byte
+	case TagByte:
 		n, err := io.CopyN(io.Discard, r, 1)
 		return n, err
-	case 0x02: // TAG_Short
+	case TagShort:
 		n, err := io.CopyN(io.Discard, r, 2)
 		return n, err
-	case 0x03: // TAG_Int
+	case TagInt:
 		n, err := io.CopyN(io.Discard, r, 4)
 		return n, err
-	case 0x04: // TAG_Long
+	case TagLong:
 		n, err := io.CopyN(io.Discard, r, 8)
 		return n, err
-	case 0x05: // TAG_Float
+	case TagFloat:
 		n, err := io.CopyN(io.Discard, r, 4)
 		return n, err
-	case 0x06: // TAG_Double
+	case TagDouble:
 		n, err := io.CopyN(io.Discard, r, 8)
 		return n, err
-	case 0x07: // TAG_Byte_Array
+	case TagByteArray:
 		var length int32
 		if err := binary.Read(r, binary.BigEndian, &length); err != nil {
 			return 0, err
 		}
 		n, err := io.CopyN(io.Discard, r, int64(length))
 		return 4 + int64(n), err
-	case 0x08: // TAG_String
+	case TagString:
 		var length uint16
 		if err := binary.Read(r, binary.BigEndian, &length); err != nil {
 			return 0, err
 		}
 		n, err := io.CopyN(io.Discard, r, int64(length))
 		return 2 + int64(n), err
-	case 0x09: // TAG_List
+	case TagList:
 		size := int64(0)
 
-		var listTypeId int8
+		var listTypeId TagType
 		if err := binary.Read(r, binary.BigEndian, &listTypeId); err != nil {
 			return 0, err
 		}
@@ -362,17 +336,17 @@ func skip(r io.Reader, typeId int8) (int64, error) {
 		}
 
 		return size, nil
-	case 0x0A: // TAG_Compound
+	case TagCompound:
 		size := int64(0)
 
 		for {
-			var fieldTypeId int8
+			var fieldTypeId TagType
 			if err := binary.Read(r, binary.BigEndian, &fieldTypeId); err != nil {
 				return 0, err
 			}
 			size++
 
-			if fieldTypeId == 0x00 { // TAG_End
+			if fieldTypeId == TagEnd {
 				return size, nil
 			}
 
@@ -400,86 +374,86 @@ func skip(r io.Reader, typeId int8) (int64, error) {
 	return 0, fmt.Errorf("unsupported type: %v", typeId)
 }
 
-func read(r io.Reader, typeId int8, field reflect.Value) (int64, error) {
+func read(r io.Reader, typeId TagType, field reflect.Value) (int64, error) {
 	size := int64(0)
 
 	switch typeId {
-	case 0x01: // TAG_Byte
+	case TagByte:
 		n, err := readByte(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x02: // TAG_Short
+	case TagShort:
 		n, err := readShort(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x03: // TAG_Int
+	case TagInt:
 		n, err := readInt(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
-	case 0x04: // TAG_Long
+	case TagLong:
 		n, err := readLong(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
-	case 0x05: // TAG_Float
+	case TagFloat:
 		n, err := readFloat(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x06: // TAG_Double
+	case TagDouble:
 		n, err := readDouble(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x07: // TAG_Byte_Array
+	case TagByteArray:
 		n, err := readByteArray(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x08: // TAG_String
+	case TagString:
 		n, err := readString(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x09: // TAG_List
+	case TagList:
 		n, err := readList(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x0A: // TAG_Compound
+	case TagCompound:
 		n, err := readCompound(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x0B: // TAG_Int_Array
+	case TagIntArray:
 		n, err := readIntArray(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
 		}
 		break
-	case 0x0C: // TAG_Long_Array
+	case TagLongArray:
 		n, err := readLongArray(r, field.Addr())
 		size += n
 		if err != nil {
@@ -515,8 +489,4 @@ func ReadNBT[T any](r io.Reader, s *T) (int64, error) {
 	}
 
 	return size, nil
-}
-
-func WriteNBT[T any](w io.Writer, s T) {
-
 }
