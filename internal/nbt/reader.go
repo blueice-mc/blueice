@@ -1,7 +1,8 @@
-package protocol
+package nbt
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -202,7 +203,7 @@ func readLongArray(r io.Reader, v reflect.Value) (int64, error) {
 }
 
 func readString(r io.Reader, v reflect.Value) (int64, error) {
-	var length int16
+	var length uint16
 	size := int64(0)
 
 	if err := binary.Read(r, binary.BigEndian, &length); err != nil {
@@ -227,14 +228,37 @@ func readString(r io.Reader, v reflect.Value) (int64, error) {
 }
 
 func readList(r io.Reader, v reflect.Value) (int64, error) {
+	var typeId int8
+	if err := binary.Read(r, binary.BigEndian, &typeId); err != nil {
+		return 0, err
+	}
+	size := int64(1)
 
+	var length int32
+	if err := binary.Read(r, binary.BigEndian, &length); err != nil {
+		return 0, err
+	}
+	size += 4
+
+	field := v.Elem()
+	data := reflect.MakeSlice(field.Type(), int(length), int(length))
+
+	for i := 0; i < int(length); i++ {
+		n, err := read(r, typeId, data.Index(i).Addr())
+		size += n
+		if err != nil {
+			return size, err
+		}
+	}
+
+	return size, nil
 }
 
-func readCompound(r io.Reader, reflectType reflect.Type, vPtr reflect.Value) (int64, error) {
+func readCompound(r io.Reader, vPtr reflect.Value) (int64, error) {
 	size := int64(0)
 
-	fieldMap := mapFields(reflectType)
 	v := vPtr.Elem()
+	fieldMap := mapFields(v.Type())
 
 	for {
 		var typeId int8
@@ -247,21 +271,30 @@ func readCompound(r io.Reader, reflectType reflect.Type, vPtr reflect.Value) (in
 			break // Type 0x00 is TAG_End
 		}
 
-		var name String
-		n, err := name.ReadFrom(r)
-		size += n
-		if err != nil {
+		var nameLength uint16
+		if err := binary.Read(r, binary.BigEndian, &nameLength); err != nil {
+			return size, err
+		}
+		size += 2
+
+		name := make([]byte, nameLength)
+		if err := binary.Read(r, binary.BigEndian, name); err != nil {
 			return size, err
 		}
 
-		fieldNr, ok := fieldMap[string(name.Content)]
+		fieldNr, ok := fieldMap[string(name)]
 
 		if !ok {
-			return size, fmt.Errorf(`field "%s" not found`, string(name.Content))
+			n, err := skip(r, typeId)
+			size += n
+			if err != nil {
+				return size, err
+			}
+			continue
 		}
 
 		field := v.Field(fieldNr)
-		n, err = read(r, typeId, reflectType, field)
+		n, err := read(r, typeId, field)
 		size += n
 		if err != nil {
 			return size, err
@@ -271,7 +304,103 @@ func readCompound(r io.Reader, reflectType reflect.Type, vPtr reflect.Value) (in
 	return size, nil
 }
 
-func read(r io.Reader, typeId int8, reflectType reflect.Type, field reflect.Value) (int64, error) {
+func skip(r io.Reader, typeId int8) (int64, error) {
+	switch typeId {
+	case 0x01: // TAG_Byte
+		n, err := io.CopyN(io.Discard, r, 1)
+		return n, err
+	case 0x02: // TAG_Short
+		n, err := io.CopyN(io.Discard, r, 2)
+		return n, err
+	case 0x03: // TAG_Int
+		n, err := io.CopyN(io.Discard, r, 4)
+		return n, err
+	case 0x04: // TAG_Long
+		n, err := io.CopyN(io.Discard, r, 8)
+		return n, err
+	case 0x05: // TAG_Float
+		n, err := io.CopyN(io.Discard, r, 4)
+		return n, err
+	case 0x06: // TAG_Double
+		n, err := io.CopyN(io.Discard, r, 8)
+		return n, err
+	case 0x07: // TAG_Byte_Array
+		var length int32
+		if err := binary.Read(r, binary.BigEndian, &length); err != nil {
+			return 0, err
+		}
+		n, err := io.CopyN(io.Discard, r, int64(length))
+		return 4 + int64(n), err
+	case 0x08: // TAG_String
+		var length uint16
+		if err := binary.Read(r, binary.BigEndian, &length); err != nil {
+			return 0, err
+		}
+		n, err := io.CopyN(io.Discard, r, int64(length))
+		return 2 + int64(n), err
+	case 0x09: // TAG_List
+		size := int64(0)
+
+		var listTypeId int8
+		if err := binary.Read(r, binary.BigEndian, &listTypeId); err != nil {
+			return 0, err
+		}
+		size += 1
+
+		var length int32
+		if err := binary.Read(r, binary.BigEndian, &length); err != nil {
+			return 1, err
+		}
+		size += 4
+
+		for i := 0; i < int(length); i++ {
+			n, err := skip(r, listTypeId)
+			size += n
+			if err != nil {
+				return size, err
+			}
+		}
+
+		return size, nil
+	case 0x0A: // TAG_Compound
+		size := int64(0)
+
+		for {
+			var fieldTypeId int8
+			if err := binary.Read(r, binary.BigEndian, &fieldTypeId); err != nil {
+				return 0, err
+			}
+			size++
+
+			if fieldTypeId == 0x00 { // TAG_End
+				return size, nil
+			}
+
+			var nameLength uint16
+			if err := binary.Read(r, binary.BigEndian, &nameLength); err != nil {
+				return size, err
+			}
+			size += 2
+
+			n, err := io.CopyN(io.Discard, r, int64(nameLength))
+			size += n
+
+			if err != nil {
+				return size, err
+			}
+
+			n, err = skip(r, fieldTypeId)
+			size += n
+			if err != nil {
+				return size, err
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("unsupported type: %v", typeId)
+}
+
+func read(r io.Reader, typeId int8, field reflect.Value) (int64, error) {
 	size := int64(0)
 
 	switch typeId {
@@ -337,7 +466,21 @@ func read(r io.Reader, typeId int8, reflectType reflect.Type, field reflect.Valu
 		}
 		break
 	case 0x0A: // TAG_Compound
-		n, err := readCompound(r, field.Type(), field.Addr())
+		n, err := readCompound(r, field.Addr())
+		size += n
+		if err != nil {
+			return size, err
+		}
+		break
+	case 0x0B: // TAG_Int_Array
+		n, err := readIntArray(r, field.Addr())
+		size += n
+		if err != nil {
+			return size, err
+		}
+		break
+	case 0x0C: // TAG_Long_Array
+		n, err := readLongArray(r, field.Addr())
 		size += n
 		if err != nil {
 			return size, err
@@ -350,8 +493,28 @@ func read(r io.Reader, typeId int8, reflectType reflect.Type, field reflect.Valu
 	return size, nil
 }
 
-func ReadNBT[T any](r io.Reader, s *T) {
+func ReadNBT[T any](r io.Reader, s *T) (int64, error) {
+	v := reflect.ValueOf(s)
 
+	var size int64
+
+	var typeId int8
+	if err := binary.Read(r, binary.BigEndian, &typeId); err != nil {
+		return size, err
+	}
+	size += 1
+
+	if typeId != int8(0x0A) {
+		return size, errors.New("nbt root must be compound")
+	}
+
+	n, err := readCompound(r, v)
+	size += n
+	if err != nil {
+		return size, err
+	}
+
+	return size, nil
 }
 
 func WriteNBT[T any](w io.Writer, s T) {
