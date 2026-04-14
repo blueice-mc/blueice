@@ -19,15 +19,17 @@ type PacketKey struct {
 
 type MinecraftServer struct {
 	Config config.ServerConfig
+	Path   string
 
 	mu              sync.RWMutex
 	Clients         []*Client
 	PacketListeners map[PacketKey][]PacketListener
 }
 
-func NewMinecraftServer(serverConfig config.ServerConfig) *MinecraftServer {
+func NewMinecraftServer(serverConfig config.ServerConfig, path string) *MinecraftServer {
 	minecraftServer := MinecraftServer{
 		Config:          serverConfig,
+		Path:            path,
 		Clients:         make([]*Client, 0),
 		PacketListeners: make(map[PacketKey][]PacketListener),
 	}
@@ -36,7 +38,7 @@ func NewMinecraftServer(serverConfig config.ServerConfig) *MinecraftServer {
 	minecraftServer.RegisterPacketListener(1, 0x00, HandleStatusRequest)
 	minecraftServer.RegisterPacketListener(1, 0x01, HandlePingRequest)
 	minecraftServer.RegisterPacketListener(2, 0x00, HandleLoginStart)
-	
+
 	return &minecraftServer
 }
 

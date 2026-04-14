@@ -9,347 +9,356 @@ import (
 	"unsafe"
 )
 
-func writeByte(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	b := int8(field.Int())
+func WriteNBT(w io.Writer, v any) (int64, error) {
+	f := deref(reflect.ValueOf(v))
 
-	n, err := w.Write([]byte{byte(b)})
+	total := int64(0)
+
+	n, err := w.Write([]byte{byte(TagCompound)})
+	total += int64(n)
+	if err != nil {
+		return total, err
+	}
+
+	m, err := writeCompound(w, f)
+	total += m
+	return total, err
+}
+
+// follows pointers and interfaces until a concrete value is found
+func deref(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return reflect.Value{}
+		}
+		v = v.Elem()
+	}
+	return v
+}
+
+// ensures the value can be addressed. if not, a copy is created and a new pointer will be returned
+func addr(v reflect.Value) reflect.Value {
+	if v.CanAddr() {
+		return v.Addr()
+	}
+
+	ptr := reflect.New(v.Type())
+	ptr.Elem().Set(v)
+	return ptr
+}
+
+func tagTypeOf(v reflect.Value) TagType {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return TagEnd
+		}
+		v = v.Elem()
+	}
+
+	switch v.Kind() {
+	case reflect.Int8:
+		return TagByte
+	case reflect.Int16:
+		return TagShort
+	case reflect.Int32:
+		return TagInt
+	case reflect.Int64:
+		return TagLong
+	case reflect.Float32:
+		return TagFloat
+	case reflect.Float64:
+		return TagDouble
+	case reflect.String:
+		return TagString
+	case reflect.Slice:
+		switch v.Type().Elem().Kind() {
+		case reflect.Int8:
+			return TagByteArray
+		case reflect.Int32:
+			return TagIntArray
+		case reflect.Int64:
+			return TagLongArray
+		default:
+			return TagList
+		}
+	case reflect.Struct:
+		return TagCompound
+	default:
+		return TagEnd
+	}
+}
+
+// writeValue calls the right writer for the given reflection value.
+// v should not be a pointer
+func writeValue(w io.Writer, v reflect.Value) (int64, error) {
+	if v.Kind() == reflect.Interface {
+		v = deref(v)
+	}
+
+	switch tagTypeOf(v) {
+	case TagByte:
+		return writeByte(w, v)
+	case TagShort:
+		return writeShort(w, v)
+	case TagInt:
+		return writeInt(w, v)
+	case TagLong:
+		return writeLong(w, v)
+	case TagFloat:
+		return writeFloat(w, v)
+	case TagDouble:
+		return writeDouble(w, v)
+	case TagByteArray:
+		return writeByteArray(w, v)
+	case TagString:
+		return writeString(w, v)
+	case TagIntArray:
+		return writeIntArray(w, v)
+	case TagLongArray:
+		return writeLongArray(w, v)
+	case TagList:
+		return writeList(w, v)
+	case TagCompound:
+		return writeCompound(w, v)
+	default:
+		return 0, fmt.Errorf("unknown tag type: %v", v.Type())
+	}
+}
+
+func writeList(w io.Writer, v reflect.Value) (int64, error) {
+	v = deref(v)
+	if !v.IsValid() || v.Kind() != reflect.Slice {
+		return 0, fmt.Errorf("cannot write non-slice type to list")
+	}
+
+	total := int64(0)
+
+	var header [5]byte
+
+	tagType := getTagType(v.Type().Elem())
+	header[0] = byte(tagType)
+
+	binary.BigEndian.PutUint32(header[1:], uint32(v.Len()))
+	n, err := w.Write(header[:])
+	total += int64(n)
+	if err != nil {
+		return total, err
+	}
+
+	for i := 0; i < v.Len(); i++ {
+		n, err := writeValue(w, v.Index(i))
+		total += n
+		if err != nil {
+			return total, err
+		}
+	}
+
+	return total, nil
+}
+
+func writeCompound(w io.Writer, v reflect.Value) (int64, error) {
+	v = deref(v)
+	if !v.IsValid() || v.Kind() != reflect.Struct {
+		return 0, fmt.Errorf("expected struct, got %v", v.Kind())
+	}
+
+	total := int64(0)
+	t := v.Type()
+
+	// iterate through all fields in the struct
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+
+		if field.Kind() == reflect.Ptr {
+			if field.IsNil() {
+				continue
+			}
+			field = deref(field)
+		}
+
+		fieldType := t.Field(i)
+
+		tagName := fieldType.Tag.Get("nbt")
+
+		// Skip if nbt tag name is empty
+		if tagName == "" || tagName == "-" {
+			continue
+		}
+
+		n, err := writeNamedTagHeader(w, tagTypeOf(field), fieldType.Tag.Get("nbt"))
+		total += n
+		if err != nil {
+			return total, err
+		}
+
+		n, err = writeValue(w, field)
+		total += n
+		if err != nil {
+			return total, err
+		}
+	}
+
+	n, err := w.Write([]byte{byte(TagEnd)})
+	total += int64(n)
+	return total, err
+}
+
+func writeNamedTagHeader(w io.Writer, t TagType, name string) (int64, error) {
+	var buf [3]byte
+	buf[0] = byte(t)
+	binary.BigEndian.PutUint16(buf[1:], uint16(len(name)))
+	total, err := w.Write(buf[:])
+
+	if err != nil {
+		return int64(total), err
+	}
+
+	n, err := w.Write([]byte(name))
+	total += n
+	if err != nil {
+		return int64(total), err
+	}
+
+	return int64(total), err
+}
+
+// Primitive writers
+
+func writeByte(w io.Writer, v reflect.Value) (int64, error) {
+	n, err := w.Write([]byte{byte(v.Int())})
 	return int64(n), err
 }
 
 func writeShort(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	s := int16(field.Int())
-
 	var buf [2]byte
-	binary.BigEndian.PutUint16(buf[:], uint16(s))
+	binary.BigEndian.PutUint16(buf[:], uint16(v.Int()))
 	n, err := w.Write(buf[:])
 	return int64(n), err
 }
 
 func writeInt(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	i := int32(field.Int())
-
 	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[:], uint32(i))
+	binary.BigEndian.PutUint32(buf[:], uint32(v.Int()))
 	n, err := w.Write(buf[:])
 	return int64(n), err
 }
 
 func writeLong(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	l := field.Int()
-
 	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], uint64(l))
+	binary.BigEndian.PutUint64(buf[:], uint64(v.Int()))
 	n, err := w.Write(buf[:])
 	return int64(n), err
 }
 
 func writeFloat(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	f := float32(field.Float())
-
 	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[:], math.Float32bits(f))
+	binary.BigEndian.PutUint32(buf[:], math.Float32bits(float32(v.Float())))
 	n, err := w.Write(buf[:])
 	return int64(n), err
 }
 
 func writeDouble(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	d := field.Float()
-
 	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], math.Float64bits(d))
+	binary.BigEndian.PutUint64(buf[:], math.Float64bits(v.Float()))
 	n, err := w.Write(buf[:])
 	return int64(n), err
 }
 
 func writeByteArray(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	length := int32(field.Len())
-	size := int64(0)
-
-	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[:], uint32(length))
-	n, err := w.Write(buf[:])
-	size += int64(n)
+	var header [4]byte
+	length := v.Len()
+	binary.BigEndian.PutUint32(header[:], uint32(length))
+	total, err := w.Write(header[:])
 	if err != nil {
-		return size, err
+		return int64(total), err
 	}
 
 	if length > 0 {
-		rawBytes := unsafe.Slice((*byte)(unsafe.Pointer(field.Pointer())), length)
-		n, err = w.Write(rawBytes[:])
-		size += int64(n)
-	}
-
-	return size, err
-}
-
-func writeIntArray(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	size := int64(0)
-
-	slice := field.Interface().([]int32)
-
-	var header [4]byte
-	binary.BigEndian.PutUint32(header[:], uint32(len(slice)))
-	n, err := w.Write(header[:])
-	size += int64(n)
-	if err != nil {
-		return size, err
-	}
-
-	var buffer [256]byte
-	for i := range slice {
-		pos := i % 64
-		binary.BigEndian.PutUint32(buffer[4*pos:4*(pos+1)], uint32(slice[i]))
-
-		if pos == 63 || i == len(slice)-1 {
-			n, err := w.Write(buffer[:4*(pos+1)])
-			size += int64(n)
-			if err != nil {
-				return size, err
-			}
+		rawBytes := unsafe.Slice((*byte)(unsafe.Pointer(v.Pointer())), length)
+		n, err := w.Write(rawBytes)
+		total += n
+		if err != nil {
+			return int64(total), err
 		}
 	}
 
-	return size, nil
-}
-
-func writeLongArray(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	size := int64(0)
-
-	slice := field.Interface().([]int64)
-
-	var header [4]byte
-	binary.BigEndian.PutUint32(header[:], uint32(len(slice)))
-	n, err := w.Write(header[:])
-	size += int64(n)
-	if err != nil {
-		return size, err
-	}
-
-	var buffer [512]byte
-	for i := range slice {
-		pos := i % 64
-		binary.BigEndian.PutUint64(buffer[8*pos:8*(pos+1)], uint64(slice[i]))
-
-		if pos == 63 || i == len(slice)-1 {
-			n, err := w.Write(buffer[:8*(pos+1)])
-			size += int64(n)
-			if err != nil {
-				return size, err
-			}
-		}
-	}
-
-	return size, nil
+	return int64(total), nil
 }
 
 func writeString(w io.Writer, v reflect.Value) (int64, error) {
-	field := v.Elem()
-	str := field.String() // TODO MUTF-8
-	size := int64(0)
-
-	var buf [2]byte
-	binary.BigEndian.PutUint16(buf[:], uint16(len(str)))
-	n, err := w.Write(buf[:])
-	size += int64(n)
+	var header [2]byte
+	str := v.String()
+	binary.BigEndian.PutUint16(header[:], uint16(len(str)))
+	total, err := w.Write(header[:])
 	if err != nil {
-		return size, err
+		return int64(total), err
 	}
 
-	n, err = io.WriteString(w, str)
-	size += int64(n)
-	if err != nil {
-		return size, err
+	if len(str) > 0 {
+		n, err := io.WriteString(w, str)
+		total += n
+		if err != nil {
+			return int64(total), err
+		}
 	}
 
-	return size, nil
+	return int64(total), nil
 }
 
-func writeList(w io.Writer, v reflect.Value) (int64, error) {
-	size := int64(0)
-	field := v.Elem()
-	elementType := field.Type().Elem()
-	tagType := getTagType(elementType)
-
-	// Writing the type ID
-	n, err := w.Write([]byte{byte(tagType)})
-	size += int64(n)
+func writeIntArray(w io.Writer, v reflect.Value) (int64, error) {
+	var header [4]byte
+	length := v.Len()
+	binary.BigEndian.PutUint32(header[:], uint32(length))
+	total, err := w.Write(header[:])
 	if err != nil {
-		return size, err
+		return int64(total), err
 	}
 
-	// Writing the length
-	length := int32(field.Len())
-	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[:], uint32(length))
-	n, err = w.Write(buf[:])
-	size += int64(n)
-	if err != nil {
-		return size, err
-	}
+	slice := v.Interface().([]int32)
 
-	// Writing the content
-	for i := 0; i < int(length); i++ {
-		element := field.Index(i)
-		n, err := write(w, element.Addr())
-		size += int64(n)
-		if err != nil {
-			return size, err
+	var buffer [256]byte
+	for i := range length {
+		pos := i % 64
+		binary.BigEndian.PutUint32(buffer[4*pos:4*(pos+1)], uint32(slice[i]))
+
+		// Flush data if the buffer is full
+		if pos == 63 || i+1 == length {
+			n, err := w.Write(buffer[:4*(pos+1)])
+			total += n
+			if err != nil {
+				return int64(total), err
+			}
 		}
 	}
 
-	return size, nil
+	return int64(total), nil
 }
 
-func writeCompound(w io.Writer, v reflect.Value) (int64, error) {
-	size := int64(0)
-
-	field := v
-
-	for field.Kind() == reflect.Ptr || field.Kind() == reflect.Interface {
-		if field.IsNil() {
-			return 0, nil
-		}
-		field = field.Elem()
-	}
-
-	for i := 0; i < field.NumField(); i++ {
-		f := field.Field(i)
-		fieldPtr := f.Addr()
-		actualType := f.Type()
-
-		if actualType.Kind() == reflect.Ptr {
-			actualType = actualType.Elem()
-		}
-
-		tagType := getTagType(actualType)
-
-		fieldName := field.Type().Field(i).Tag.Get("nbt")
-		if fieldName == "" || fieldName == "-" {
-			continue
-		}
-
-		if f.Kind() == reflect.Ptr && f.IsNil() {
-			continue
-		}
-
-		// Writing the type
-
-		n, err := w.Write([]byte{byte(tagType)})
-		size += int64(n)
-		if err != nil {
-			return size, err
-		}
-
-		// Writing the name
-
-		// Length of the name
-		var buf [2]byte
-		binary.BigEndian.PutUint16(buf[:], uint16(len(fieldName)))
-		n, err = w.Write(buf[:])
-		size += int64(n)
-		if err != nil {
-			return size, err
-		}
-
-		// Name as String
-		n, err = io.WriteString(w, fieldName)
-		size += int64(n)
-		if err != nil {
-			return size, err
-		}
-
-		// Writing the field content
-		m, err := write(w, fieldPtr)
-		size += m
-		if err != nil {
-			return size, err
-		}
-	}
-
-	// Write TAG_End
-	n, err := w.Write([]byte{byte(TagEnd)})
-	size += int64(n)
+func writeLongArray(w io.Writer, v reflect.Value) (int64, error) {
+	var header [4]byte
+	length := v.Len()
+	binary.BigEndian.PutUint32(header[:], uint32(length))
+	total, err := w.Write(header[:])
 	if err != nil {
-		return size, err
+		return int64(total), err
 	}
-	return size, nil
-}
 
-func write(w io.Writer, v reflect.Value) (int64, error) {
-	if v.Kind() == reflect.Ptr {
-		if v.IsNil() {
-			return 0, nil
+	slice := v.Interface().([]int64)
+
+	var buffer [512]byte
+	for i := range length {
+		pos := i % 64
+		binary.BigEndian.PutUint64(buffer[8*pos:8*(pos+1)], uint64(slice[i]))
+
+		// Flush data if the buffer is full
+		if pos == 63 || i+1 == length {
+			n, err := w.Write(buffer[:8*(pos+1)])
+			total += n
+			if err != nil {
+				return int64(total), err
+			}
 		}
 	}
 
-	tagType := getTagType(v.Elem().Type())
-
-	switch tagType {
-	case TagEnd:
-		return 0, nil
-	case TagByte:
-		n, err := writeByte(w, v)
-		return n, err
-	case TagShort:
-		n, err := writeShort(w, v)
-		return n, err
-	case TagInt:
-		n, err := writeInt(w, v)
-		return n, err
-	case TagLong:
-		n, err := writeLong(w, v)
-		return n, err
-	case TagFloat:
-		n, err := writeFloat(w, v)
-		return n, err
-	case TagDouble:
-		n, err := writeDouble(w, v)
-		return n, err
-	case TagByteArray:
-		n, err := writeByteArray(w, v)
-		return n, err
-	case TagString:
-		n, err := writeString(w, v)
-		return n, err
-	case TagList:
-		n, err := writeList(w, v)
-		return n, err
-	case TagCompound:
-		n, err := writeCompound(w, v)
-		return n, err
-	case TagIntArray:
-		n, err := writeIntArray(w, v)
-		return n, err
-	case TagLongArray:
-		n, err := writeLongArray(w, v)
-		return n, err
-	default:
-		return 0, fmt.Errorf("unknown tag type: %v", tagType)
-	}
-}
-
-func WriteNBT(w io.Writer, s any) (int64, error) {
-	ptr := reflect.ValueOf(s)
-
-	if ptr.Kind() == reflect.Interface {
-		ptr = ptr.Elem()
-	}
-
-	// Writing type first
-	n, err := w.Write([]byte{byte(TagCompound)})
-	if err != nil {
-		return int64(n), err
-	}
-
-	m, err := writeCompound(w, ptr)
-	return int64(n) + m, err
+	return int64(total), nil
 }

@@ -56,38 +56,34 @@ func SendRegistryPackets(client *Client) {
 	}
 
 	overworldData := &defs.DimensionTypeEntry{
-		CoordinateScale:     1.0, // [Double] -> float64
-		HasSkylight:         1,   // [Boolean] -> int8
-		HasCeiling:          0,   // [Boolean] -> int8
-		HasEnderDragonFight: 0,   // [Boolean] -> int8
-		AmbientLight:        0.0, // [Float] -> float32
+		CoordinateScale:     1.0,
+		HasSkylight:         1,
+		HasCeiling:          0,
+		HasEnderDragonFight: 0,
+		AmbientLight:        0.0,
 
-		// Zeit-Logik
-		HasFixedTime: 0,   // [Boolean] -> int8 (false)
-		FixedTime:    nil, // (optional) -> bleibt weg, da HasFixedTime 0 ist
+		HasFixedTime: 0,
+		FixedTime:    nil,
 
-		MonsterSpawnBlockLightLimit: 0, // [Int] -> int32
+		MonsterSpawnBlockLightLimit: 0,
 		MonsterSpawnLightLevel: defs.IntProvider{
 			Type:  "minecraft:constant",
 			Value: 0,
 		},
 
-		LogicalHeight: 384, // [Int] -> int32
-		MinY:          -64, // [Int] -> int32
-		Height:        384, // [Int] -> int32
+		LogicalHeight: 384,
+		MinY:          -64,
+		Height:        384,
 
-		Infiniburn: "#minecraft:infiniburn_overworld", // [String] mit # laut deiner Quelle
+		Infiniburn: "#minecraft:infiniburn_overworld",
 
-		// Die neuen Felder 1.21.2+
-		Skybox:        "overworld", // [String]
-		CardinalLight: "default",   // [String]
+		Skybox:        "overworld",
+		CardinalLight: "default",
 
-		// Attributes muss ein Compound sein (in Go eine Map oder leeres Struct)
 		Attributes: defs.EmptyCompound{},
 
-		DefaultClock: "minecraft:overworld", // [String]
+		DefaultClock: "minecraft:overworld",
 
-		// Timelines ist eine Liste (NBT List)
 		Timelines: []string{},
 	}
 
@@ -171,6 +167,90 @@ func SendRegistryPackets(client *Client) {
 
 	if err := client.SendPacket(biomePacket); err != nil {
 		log.Println("Error while sending biome", err)
+	}
+
+	variantRegistries := []struct {
+		path    string
+		entryID string
+		data    any
+	}{
+		{"cat_variant", "tabby", defs.CatVariant{
+			AssetID:         "minecraft:entity/cat/tabby",
+			BabyAssetID:     "minecraft:entity/cat/tabby",
+			SpawnConditions: []defs.SpawnCondition{},
+		}},
+		{"chicken_variant", "default", defs.ChickenVariant{
+			AssetID:         "minecraft:entity/chicken",
+			BabyAssetID:     "minecraft:entity/chicken",
+			Model:           "normal",
+			SpawnConditions: []defs.SpawnCondition{},
+		}},
+		{"cow_variant", "default", defs.CowVariant{
+			AssetID:         "minecraft:entity/cow",
+			BabyAssetID:     "minecraft:entity/cow",
+			Model:           "normal",
+			SpawnConditions: []defs.SpawnCondition{},
+		}},
+		{"pig_variant", "default", defs.PigVariant{
+			AssetID:         "minecraft:entity/pig",
+			BabyAssetID:     "minecraft:entity/pig",
+			Model:           "normal",
+			SpawnConditions: []defs.SpawnCondition{},
+		}},
+		{"wolf_variant", "pale", defs.WolfVariant{
+			Assets: defs.WolfAssets{
+				Angry: "minecraft:entity/wolf/wolf_angry",
+				Wild:  "minecraft:entity/wolf/wolf",
+				Tame:  "minecraft:entity/wolf/wolf_tame",
+			},
+			BabyAssets: defs.WolfAssets{
+				Angry: "minecraft:entity/wolf/wolf_angry",
+				Wild:  "minecraft:entity/wolf/wolf",
+				Tame:  "minecraft:entity/wolf/wolf_tame",
+			},
+			SpawnConditions: []defs.SpawnCondition{},
+		}},
+		{"wolf_sound_variant", "default", defs.WolfSoundVariant{
+			AdultSounds: defs.WolfSoundSet{
+				AmbientSound: "minecraft:entity.wolf.ambient",
+				DeathSound:   "minecraft:entity.wolf.death",
+				GrowlSound:   "minecraft:entity.wolf.growl",
+				HurtSound:    "minecraft:entity.wolf.hurt",
+				PantSound:    "minecraft:entity.wolf.pant",
+				StepSound:    "minecraft:entity.wolf.step",
+				WhineSound:   "minecraft:entity.wolf.whine",
+			},
+			BabySounds: defs.WolfSoundSet{
+				AmbientSound: "minecraft:entity.baby_wolf.ambient",
+				DeathSound:   "minecraft:entity.baby_wolf.death",
+				GrowlSound:   "minecraft:entity.baby_wolf.growl",
+				HurtSound:    "minecraft:entity.baby_wolf.hurt",
+				PantSound:    "minecraft:entity.baby_wolf.pant",
+				StepSound:    "minecraft:entity.baby_wolf.step",
+				WhineSound:   "minecraft:entity.baby_wolf.whine",
+			},
+		}},
+	}
+
+	for _, r := range variantRegistries {
+		pkt := &protocol.RegistryDataPacketOutbound{
+			RegistryID: protocol.Identifier{Namespace: "minecraft", Path: r.path},
+			Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
+				Content: []protocol.RegistryEntry{
+					{
+						EntryID: protocol.Identifier{Namespace: "minecraft", Path: r.entryID},
+						Data: protocol.PrefixedOptional[any]{
+							Present: true,
+							Content: r.data,
+						},
+					},
+				},
+			},
+		}
+		if err := client.SendPacket(pkt); err != nil {
+			log.Printf("Error sending registry %s: %v", r.path, err)
+			return
+		}
 	}
 
 	FinishConfiguration(client)
