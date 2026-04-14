@@ -35,6 +35,26 @@ func SendRegistryPackets(client *Client) {
 
 	// Create overworld packet
 
+	clockPacket := protocol.RegistryDataPacketOutbound{
+		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "world_clock"},
+		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
+			Content: []protocol.RegistryEntry{
+				{
+					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "overworld"},
+					Data: protocol.PrefixedOptional[any]{
+						Present: true,
+						Content: defs.WorldClockEntry{},
+					},
+				},
+			},
+		},
+	}
+
+	if err := client.SendPacket(&clockPacket); err != nil {
+		log.Println("Error while sending clock", err)
+		return
+	}
+
 	overworldData := &defs.DimensionTypeEntry{
 		CoordinateScale:     1.0, // [Double] -> float64
 		HasSkylight:         1,   // [Boolean] -> int8
@@ -59,8 +79,8 @@ func SendRegistryPackets(client *Client) {
 		Infiniburn: "#minecraft:infiniburn_overworld", // [String] mit # laut deiner Quelle
 
 		// Die neuen Felder 1.21.2+
-		Skybox:        "minecraft:overworld", // [String]
-		CardinalLight: "minecraft:default",   // [String]
+		Skybox:        "overworld", // [String]
+		CardinalLight: "default",   // [String]
 
 		// Attributes muss ein Compound sein (in Go eine Map oder leeres Struct)
 		Attributes: defs.EmptyCompound{},

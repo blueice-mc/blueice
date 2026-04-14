@@ -2,7 +2,7 @@ package defs
 
 type IntProvider struct {
 	Type  string `nbt:"type"`
-	Value int8   `nbt:"value"`
+	Value int32  `nbt:"value"`
 }
 
 type DimensionTypeEntry struct {
@@ -33,6 +33,8 @@ type DimensionTypeEntry struct {
 
 	Timelines []string `nbt:"timelines"`
 }
+
+type WorldClockEntry struct{}
 
 type EmptyCompound struct{}
 
