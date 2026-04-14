@@ -2,9 +2,12 @@ package server
 
 import (
 	"BlueIce/internal/config"
+	"BlueIce/internal/mojang"
+	"BlueIce/internal/registry"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -24,6 +27,7 @@ type MinecraftServer struct {
 	mu              sync.RWMutex
 	Clients         []*Client
 	PacketListeners map[PacketKey][]PacketListener
+	Registries      registry.Registries
 }
 
 func NewMinecraftServer(serverConfig config.ServerConfig, path string) *MinecraftServer {
@@ -43,6 +47,19 @@ func NewMinecraftServer(serverConfig config.ServerConfig, path string) *Minecraf
 }
 
 func (server *MinecraftServer) Start() error {
+	if err := os.Mkdir(server.Path+"/lib", 0755); err == nil {
+		err := mojang.FetchMinecraftData(server.Path + "/lib")
+		if err != nil {
+			log.Fatal("Failed to fetch minecraft server data from mojang: ", err)
+		}
+	} else if !os.IsExist(err) {
+		log.Fatal("Failed to create minecraft server lib directory: ", err)
+	}
+
+	if err := server.Registries.LoadAll(server.Path); err != nil {
+		log.Fatal("Failed to load minecraft registries: ", err)
+	}
+
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", server.Config.Server.Port))
 	log.Println("Listening on", listener.Addr())
 

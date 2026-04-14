@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -178,14 +179,18 @@ func writeCompound(w io.Writer, v reflect.Value) (int64, error) {
 
 		fieldType := t.Field(i)
 
-		tagName := fieldType.Tag.Get("nbt")
+		tagName, omitempty := parseTag(fieldType.Tag.Get("nbt"))
 
 		// Skip if nbt tag name is empty
 		if tagName == "" || tagName == "-" {
 			continue
 		}
 
-		n, err := writeNamedTagHeader(w, tagTypeOf(field), fieldType.Tag.Get("nbt"))
+		if omitempty && field.IsZero() {
+			continue
+		}
+
+		n, err := writeNamedTagHeader(w, tagTypeOf(field), tagName)
 		total += n
 		if err != nil {
 			return total, err
@@ -220,6 +225,11 @@ func writeNamedTagHeader(w io.Writer, t TagType, name string) (int64, error) {
 	}
 
 	return int64(total), err
+}
+
+func parseTag(tag string) (string, bool) {
+	name, _, _ := strings.Cut(tag, ",")
+	return name, strings.Contains(tag, ",omitempty")
 }
 
 // Primitive writers

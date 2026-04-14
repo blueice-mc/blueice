@@ -55,7 +55,25 @@ type BiomeEffects struct {
 	GrassColorModifier string `nbt:"grass_color_modifier" json:"grass_color_modifier"`
 }
 
-type SpawnCondition struct{}
+type SpawnCondition struct {
+	Priority  int32               `nbt:"priority"            json:"priority"`
+	Condition *SpawnConditionData `nbt:"condition,omitempty" json:"condition,omitempty"`
+}
+
+type SpawnConditionData struct {
+	Type string `nbt:"type"                  json:"type"`
+	// minecraft:structure
+	Structures string `nbt:"structures,omitempty"  json:"structures,omitempty"`
+	// minecraft:biome
+	Biomes string `nbt:"biomes,omitempty"      json:"biomes,omitempty"`
+	// minecraft:moon_brightness
+	Range *FloatRange `nbt:"range,omitempty"       json:"range,omitempty"`
+}
+
+type FloatRange struct {
+	Min *float32 `nbt:"min,omitempty" json:"min,omitempty"`
+	Max *float32 `nbt:"max,omitempty" json:"max,omitempty"`
+}
 
 type CatVariant struct {
 	AssetID         string           `nbt:"asset_id"          json:"asset_id"`
@@ -63,25 +81,50 @@ type CatVariant struct {
 	SpawnConditions []SpawnCondition `nbt:"spawn_conditions"  json:"spawn_conditions"`
 }
 
-type CatSoundVariant = WolfSoundVariant // gleiche Struktur
+type CatSoundSet struct {
+	AmbientSound      string `nbt:"ambient_sound,omitempty"      json:"ambient_sound,omitempty"`
+	BegForFoodSound   string `nbt:"beg_for_food_sound,omitempty" json:"beg_for_food_sound,omitempty"`
+	DeathSound        string `nbt:"death_sound,omitempty"        json:"death_sound,omitempty"`
+	EatSound          string `nbt:"eat_sound,omitempty"          json:"eat_sound,omitempty"`
+	HissSound         string `nbt:"hiss_sound,omitempty"         json:"hiss_sound,omitempty"`
+	HurtSound         string `nbt:"hurt_sound,omitempty"         json:"hurt_sound,omitempty"`
+	PurrSound         string `nbt:"purr_sound,omitempty"         json:"purr_sound,omitempty"`
+	PurreowSound      string `nbt:"purreow_sound,omitempty"      json:"purreow_sound,omitempty"`
+	StrayAmbientSound string `nbt:"stray_ambient_sound,omitempty" json:"stray_ambient_sound,omitempty"`
+}
+
+type CatSoundVariant struct {
+	AdultSounds CatSoundSet `nbt:"adult_sounds" json:"adult_sounds"`
+	BabySounds  CatSoundSet `nbt:"baby_sounds"  json:"baby_sounds"`
+}
 
 type ChickenVariant struct {
-	AssetID         string           `nbt:"asset_id"         json:"asset_id"`
-	BabyAssetID     string           `nbt:"baby_asset_id"    json:"baby_asset_id"`
-	Model           string           `nbt:"model"            json:"model"`
-	SpawnConditions []SpawnCondition `nbt:"spawn_conditions" json:"spawn_conditions"`
+	AssetID         string           `nbt:"asset_id"          json:"asset_id"`
+	BabyAssetID     string           `nbt:"baby_asset_id"     json:"baby_asset_id"`
+	Model           string           `nbt:"model,omitempty"   json:"model,omitempty"`
+	SpawnConditions []SpawnCondition `nbt:"spawn_conditions"  json:"spawn_conditions"`
 }
 
-type ChickenSoundVariant = WolfSoundVariant
+type ChickenSoundSet = PigSoundSet
+
+type ChickenSoundVariant struct {
+	AdultSounds ChickenSoundSet `nbt:"adult_sounds" json:"adult_sounds"`
+	BabySounds  ChickenSoundSet `nbt:"baby_sounds"  json:"baby_sounds"`
+}
 
 type CowVariant struct {
-	AssetID         string           `nbt:"asset_id"         json:"asset_id"`
-	BabyAssetID     string           `nbt:"baby_asset_id"    json:"baby_asset_id"`
-	Model           string           `nbt:"model"            json:"model"`
-	SpawnConditions []SpawnCondition `nbt:"spawn_conditions" json:"spawn_conditions"`
+	AssetID         string           `nbt:"asset_id"          json:"asset_id"`
+	BabyAssetID     string           `nbt:"baby_asset_id"     json:"baby_asset_id"`
+	Model           string           `nbt:"model,omitempty"   json:"model,omitempty"`
+	SpawnConditions []SpawnCondition `nbt:"spawn_conditions"  json:"spawn_conditions"`
 }
 
-type CowSoundVariant = WolfSoundVariant
+type CowSoundVariant struct {
+	AmbientSound string `nbt:"ambient_sound,omitempty" json:"ambient_sound,omitempty"`
+	DeathSound   string `nbt:"death_sound,omitempty"   json:"death_sound,omitempty"`
+	HurtSound    string `nbt:"hurt_sound,omitempty"    json:"hurt_sound,omitempty"`
+	StepSound    string `nbt:"step_sound,omitempty"    json:"step_sound,omitempty"`
+}
 
 type FrogVariant struct {
 	AssetID         string           `nbt:"asset_id"         json:"asset_id"`
@@ -89,13 +132,24 @@ type FrogVariant struct {
 }
 
 type PigVariant struct {
-	AssetID         string           `nbt:"asset_id"         json:"asset_id"`
-	BabyAssetID     string           `nbt:"baby_asset_id"    json:"baby_asset_id"`
-	Model           string           `nbt:"model"            json:"model"`
-	SpawnConditions []SpawnCondition `nbt:"spawn_conditions" json:"spawn_conditions"`
+	AssetID         string           `nbt:"asset_id"          json:"asset_id"`
+	BabyAssetID     string           `nbt:"baby_asset_id"     json:"baby_asset_id"`
+	Model           string           `nbt:"model,omitempty"   json:"model,omitempty"`
+	SpawnConditions []SpawnCondition `nbt:"spawn_conditions"  json:"spawn_conditions"`
 }
 
-type PigSoundVariant = WolfSoundVariant
+type PigSoundSet struct {
+	AmbientSound string `nbt:"ambient_sound,omitempty" json:"ambient_sound,omitempty"`
+	DeathSound   string `nbt:"death_sound,omitempty"   json:"death_sound,omitempty"`
+	EatSound     string `nbt:"eat_sound,omitempty"     json:"eat_sound,omitempty"`
+	HurtSound    string `nbt:"hurt_sound,omitempty"    json:"hurt_sound,omitempty"`
+	StepSound    string `nbt:"step_sound,omitempty"    json:"step_sound,omitempty"`
+}
+
+type PigSoundVariant struct {
+	AdultSounds PigSoundSet `nbt:"adult_sounds" json:"adult_sounds"`
+	BabySounds  PigSoundSet `nbt:"baby_sounds"  json:"baby_sounds"`
+}
 
 type WolfAssets struct {
 	Angry string `nbt:"angry" json:"angry"`
@@ -110,13 +164,13 @@ type WolfVariant struct {
 }
 
 type WolfSoundSet struct {
-	AmbientSound string `nbt:"ambient_sound" json:"ambient_sound"`
-	DeathSound   string `nbt:"death_sound"   json:"death_sound"`
-	GrowlSound   string `nbt:"growl_sound"   json:"growl_sound"`
-	HurtSound    string `nbt:"hurt_sound"    json:"hurt_sound"`
-	PantSound    string `nbt:"pant_sound"    json:"pant_sound"`
-	StepSound    string `nbt:"step_sound"    json:"step_sound"`
-	WhineSound   string `nbt:"whine_sound"   json:"whine_sound"`
+	AmbientSound string `nbt:"ambient_sound,omitempty" json:"ambient_sound,omitempty"`
+	DeathSound   string `nbt:"death_sound,omitempty"   json:"death_sound,omitempty"`
+	GrowlSound   string `nbt:"growl_sound,omitempty"   json:"growl_sound,omitempty"`
+	HurtSound    string `nbt:"hurt_sound,omitempty"    json:"hurt_sound,omitempty"`
+	PantSound    string `nbt:"pant_sound,omitempty"    json:"pant_sound,omitempty"`
+	StepSound    string `nbt:"step_sound,omitempty"    json:"step_sound,omitempty"`
+	WhineSound   string `nbt:"whine_sound,omitempty"   json:"whine_sound,omitempty"`
 }
 
 type WolfSoundVariant struct {
@@ -125,13 +179,20 @@ type WolfSoundVariant struct {
 }
 
 type ZombieNautilusVariant struct {
-	AssetID         string           `nbt:"asset_id"         json:"asset_id"`
-	Model           string           `nbt:"model"            json:"model"`
-	SpawnConditions []SpawnCondition `nbt:"spawn_conditions" json:"spawn_conditions"`
+	AssetID         string           `nbt:"asset_id"          json:"asset_id"`
+	Model           string           `nbt:"model,omitempty"   json:"model,omitempty"`
+	SpawnConditions []SpawnCondition `nbt:"spawn_conditions"  json:"spawn_conditions"`
 }
 
 type PaintingVariant struct {
 	AssetID string `nbt:"asset_id" json:"asset_id"`
 	Width   int32  `nbt:"width"    json:"width"`
 	Height  int32  `nbt:"height"   json:"height"`
+}
+
+type DamageType struct {
+	Effects    string  `nbt:"effects,omitempty" json:"effects,omitempty"`
+	Exhaustion float32 `nbt:"exhaustion"        json:"exhaustion"`
+	MessageID  string  `nbt:"message_id"        json:"message_id"`
+	Scaling    string  `nbt:"scaling"           json:"scaling"`
 }
