@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"strings"
 )
 
 // Definition of the VarInt type and read/write functions
@@ -383,6 +384,60 @@ func (gpo *GameProfileOption) ReadFrom(r io.Reader) (int64, error) {
 	size += n
 	if err != nil {
 		return size, err
+	}
+
+	return size, nil
+}
+
+type Identifier struct {
+	Namespace string
+	Path      string
+}
+
+func (id *Identifier) String() string {
+	return id.Namespace + ":" + id.Path
+}
+
+func (id *Identifier) WriteTo(w io.Writer) (int64, error) {
+	str := id.String()
+
+	length := VarInt(len(str))
+	size, err := length.WriteTo(w)
+	if err != nil {
+		return size, err
+	}
+
+	n, err := io.WriteString(w, str)
+	size += int64(n)
+	return size, err
+}
+
+func (id *Identifier) ReadFrom(r io.Reader) (int64, error) {
+
+	var length VarInt
+	size, err := length.ReadFrom(r)
+	if err != nil {
+		return size, err
+	}
+
+	buffer := make([]byte, length)
+	n, err := r.Read(buffer)
+	size += int64(n)
+	if err != nil {
+		return size, err
+	}
+
+	str := string(buffer)
+	splitted := strings.Split(str, ":")
+
+	if len(splitted) < 2 {
+		id.Namespace = "minecraft"
+		id.Path = splitted[0]
+	} else if len(splitted) == 2 {
+		id.Namespace = splitted[0]
+		id.Path = splitted[1]
+	} else {
+		return size, errors.New("invalid identifier")
 	}
 
 	return size, nil

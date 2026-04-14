@@ -36,7 +36,7 @@ func NewMinecraftServer(serverConfig config.ServerConfig) *MinecraftServer {
 	minecraftServer.RegisterPacketListener(1, 0x00, HandleStatusRequest)
 	minecraftServer.RegisterPacketListener(1, 0x01, HandlePingRequest)
 	minecraftServer.RegisterPacketListener(2, 0x00, HandleLoginStart)
-
+	
 	return &minecraftServer
 }
 

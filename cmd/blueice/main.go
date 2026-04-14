@@ -19,11 +19,10 @@ func main() {
 	if err := config.InitializeServerConfig(path+"/config.toml", &serverConfig); err != nil {
 		log.Fatal("Could not read or create server config", err)
 	}
-	
+
 	minecraftServer := server.NewMinecraftServer(serverConfig)
 	err := minecraftServer.Start()
-
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Could not start minecraft server", err)
 	}
 }

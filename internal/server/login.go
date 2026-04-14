@@ -16,7 +16,7 @@ func HandleLoginStart(client *Client, payload []byte) {
 
 	log.Printf("Player %s is trying to log in", string(packet.Name.Content))
 
-	/*options := protocol.PrefixedArray[protocol.GameProfileOption]{
+	options := protocol.PrefixedArray[protocol.GameProfileOption]{
 		Length: 0,
 	}
 
@@ -29,14 +29,11 @@ func HandleLoginStart(client *Client, payload []byte) {
 
 	if err := client.SendPacket(&responsePacket); err != nil {
 		log.Println("Error while sending login response", err)
-	}*/
-
-	var responsePacket protocol.LoginDisconnectPacketOutbound
-	responsePacket.Reason = protocol.NewString(`{"text":"Not supported"}`)
-
-	if err := client.SendPacket(&responsePacket); err != nil {
-		log.Println(err)
 	}
 
+	// Set client to configuration state
 	client.State = 3
+
+	// Start configuration
+	StartConfiguration(client)
 }
