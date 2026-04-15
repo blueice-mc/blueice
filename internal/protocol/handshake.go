@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-type HandshakePacketInbound struct {
+type PacketHandshakeIn struct {
 	ProtocolVersion VarInt
 	ServerAddress   String
 	ServerPort      uint16
@@ -13,11 +13,11 @@ type HandshakePacketInbound struct {
 	Intent VarInt
 }
 
-func (h *HandshakePacketInbound) ID() VarInt {
+func (h *PacketHandshakeIn) ID() VarInt {
 	return 0x00
 }
 
-func (h *HandshakePacketInbound) ReadFrom(reader io.Reader) (int64, error) {
+func (h *PacketHandshakeIn) ReadFrom(reader io.Reader) (int64, error) {
 	var protocolVersion VarInt
 	n, err := protocolVersion.ReadFrom(reader)
 	size := n
@@ -46,7 +46,7 @@ func (h *HandshakePacketInbound) ReadFrom(reader io.Reader) (int64, error) {
 		return size, err
 	}
 
-	*h = HandshakePacketInbound{
+	*h = PacketHandshakeIn{
 		ProtocolVersion: protocolVersion,
 		ServerAddress:   serverAddress,
 		ServerPort:      serverPort,
@@ -54,8 +54,4 @@ func (h *HandshakePacketInbound) ReadFrom(reader io.Reader) (int64, error) {
 	}
 
 	return size, nil
-}
-
-func (h *HandshakePacketInbound) WriteTo(writer io.Writer) (int64, error) {
-	panic("Inbound packet does not support WriteTo")
 }

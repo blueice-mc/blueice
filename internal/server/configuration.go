@@ -27,7 +27,7 @@ func sendRegistryFromMap[T any](client *Client, registryPath string, entries map
 		})
 	}
 
-	pkt := &protocol.RegistryDataPacketOutbound{
+	pkt := &protocol.PacketConfigOutRegistryData{
 		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: registryPath},
 		Entries:    protocol.PrefixedArray[protocol.RegistryEntry]{Content: registryEntries},
 	}
@@ -43,7 +43,7 @@ func StartConfiguration(client *Client) {
 	}
 	buf.WriteString(brand)
 
-	brandPacket := protocol.PluginClientMessagePacketOutbound{
+	brandPacket := protocol.PacketConfigOutPluginMessage{
 		Channel: protocol.Identifier{
 			Namespace: "minecraft",
 			Path:      "brand",
@@ -63,7 +63,7 @@ func SendRegistryPackets(client *Client) {
 
 	// Create overworld packet
 
-	clockPacket := protocol.RegistryDataPacketOutbound{
+	clockPacket := protocol.PacketConfigOutRegistryData{
 		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "world_clock"},
 		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
 			Content: []protocol.RegistryEntry{
@@ -115,7 +115,7 @@ func SendRegistryPackets(client *Client) {
 		Timelines: []string{},
 	}
 
-	overworldPacket := &protocol.RegistryDataPacketOutbound{
+	overworldPacket := &protocol.PacketConfigOutRegistryData{
 		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "dimension_type"},
 		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
 			Content: []protocol.RegistryEntry{
@@ -145,7 +145,7 @@ func SendRegistryPackets(client *Client) {
 		},
 	}
 
-	chatPacket := &protocol.RegistryDataPacketOutbound{
+	chatPacket := &protocol.PacketConfigOutRegistryData{
 		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "chat_type"},
 		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
 			Content: []protocol.RegistryEntry{
@@ -178,7 +178,7 @@ func SendRegistryPackets(client *Client) {
 		},
 	}
 
-	biomePacket := &protocol.RegistryDataPacketOutbound{
+	biomePacket := &protocol.PacketConfigOutRegistryData{
 		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "worldgen/biome"},
 		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
 			Content: []protocol.RegistryEntry{

@@ -17,7 +17,7 @@ func HandleStatusRequest(client *Client, payload []byte) {
         "description": {"text": "` + motd + `"}
     }`)
 
-	statusPacket := protocol.StatusPacketOutbound{
+	statusPacket := protocol.PacketStatusOut{
 		Status: responseJson,
 	}
 
@@ -27,7 +27,7 @@ func HandleStatusRequest(client *Client, payload []byte) {
 }
 
 func HandlePingRequest(client *Client, payload []byte) {
-	var pingPacket protocol.PingPacketInboundOutbound
+	var pingPacket protocol.PacketStatusPing
 
 	if _, err := pingPacket.ReadFrom(bytes.NewBuffer(payload)); err != nil {
 		log.Println(err)

@@ -7,7 +7,7 @@ import (
 )
 
 func HandleHandshake(client *Client, payload []byte) {
-	var packet protocol.HandshakePacketInbound
+	var packet protocol.PacketHandshakeIn
 
 	if _, err := packet.ReadFrom(bytes.NewReader(payload)); err != nil {
 		log.Println(err)

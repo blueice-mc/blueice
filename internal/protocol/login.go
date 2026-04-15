@@ -5,20 +5,16 @@ import (
 	"io"
 )
 
-type LoginStartPacketInbound struct {
+type PacketLoginInStart struct {
 	Name String
 	UUID [16]byte
 }
 
-func (l LoginStartPacketInbound) ID() VarInt {
+func (l PacketLoginInStart) ID() VarInt {
 	return 0x00
 }
 
-func (l LoginStartPacketInbound) WriteTo(w io.Writer) (int64, error) {
-	panic("Inbound packet does not support WriteTo")
-}
-
-func (l *LoginStartPacketInbound) ReadFrom(r io.Reader) (int64, error) {
+func (l *PacketLoginInStart) ReadFrom(r io.Reader) (int64, error) {
 	n, err := l.Name.ReadFrom(r)
 	if err != nil {
 		return n, err
@@ -34,34 +30,26 @@ func (l *LoginStartPacketInbound) ReadFrom(r io.Reader) (int64, error) {
 	return n + int64(m), err
 }
 
-type LoginDisconnectPacketOutbound struct {
+type PacketLoginOutDisconnect struct {
 	Reason String
 }
 
-func (l LoginDisconnectPacketOutbound) ID() VarInt {
+func (l PacketLoginOutDisconnect) ID() VarInt {
 	return 0x00
 }
 
-func (l LoginDisconnectPacketOutbound) WriteTo(w io.Writer) (int64, error) {
+func (l PacketLoginOutDisconnect) WriteTo(w io.Writer) (int64, error) {
 	return l.Reason.WriteTo(w)
 }
 
-func (l *LoginDisconnectPacketOutbound) ReadFrom(r io.Reader) (int64, error) {
-	panic("Outbound packet does not support ReadFrom")
-}
-
-type LoginSuccessPacketOutbound struct {
+type PacketLoginOutSuccess struct {
 	Profile GameProfile
 }
 
-func (l LoginSuccessPacketOutbound) ID() VarInt {
+func (l PacketLoginOutSuccess) ID() VarInt {
 	return 0x02
 }
 
-func (l *LoginSuccessPacketOutbound) WriteTo(w io.Writer) (int64, error) {
+func (l *PacketLoginOutSuccess) WriteTo(w io.Writer) (int64, error) {
 	return l.Profile.WriteTo(w)
-}
-
-func (l *LoginSuccessPacketOutbound) ReadFrom(r io.Reader) (int64, error) {
-	panic("Outbound packet does not support ReadFrom")
 }

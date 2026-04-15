@@ -5,34 +5,34 @@ import (
 	"io"
 )
 
-type StatusPacketOutbound struct {
+type PacketStatusOut struct {
 	Status String
 }
 
-func (packet StatusPacketOutbound) ID() VarInt {
+func (packet PacketStatusOut) ID() VarInt {
 	return 0x00
 }
 
-func (packet StatusPacketOutbound) WriteTo(w io.Writer) (int64, error) {
+func (packet PacketStatusOut) WriteTo(w io.Writer) (int64, error) {
 	return packet.Status.WriteTo(w)
 }
 
-func (packet StatusPacketOutbound) ReadFrom(r io.Reader) (int64, error) {
+func (packet PacketStatusOut) ReadFrom(r io.Reader) (int64, error) {
 	panic("Outbound packet does not support ReadFrom")
 }
 
-type PingPacketInboundOutbound struct {
+type PacketStatusPing struct {
 	Timestamp int64
 }
 
-func (packet PingPacketInboundOutbound) ID() VarInt {
+func (packet PacketStatusPing) ID() VarInt {
 	return 0x01
 }
 
-func (packet PingPacketInboundOutbound) WriteTo(w io.Writer) (int64, error) {
+func (packet PacketStatusPing) WriteTo(w io.Writer) (int64, error) {
 	return 8, binary.Write(w, binary.BigEndian, packet.Timestamp)
 }
 
-func (packet PingPacketInboundOutbound) ReadFrom(r io.Reader) (int64, error) {
+func (packet PacketStatusPing) ReadFrom(r io.Reader) (int64, error) {
 	return 8, binary.Read(r, binary.BigEndian, &packet.Timestamp)
 }

@@ -4,6 +4,14 @@ import "io"
 
 type Packet interface {
 	ID() VarInt
-	WriteTo(w io.Writer) (int64, error)
+}
+
+type ServerboundPacket interface {
+	Packet
 	ReadFrom(r io.Reader) (int64, error)
+}
+
+type ClientboundPacket interface {
+	Packet
+	WriteTo(w io.Writer) (int64, error)
 }

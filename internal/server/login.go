@@ -7,7 +7,7 @@ import (
 )
 
 func HandleLoginStart(client *Client, payload []byte) {
-	var packet protocol.LoginStartPacketInbound
+	var packet protocol.PacketLoginInStart
 
 	if _, err := packet.ReadFrom(bytes.NewReader(payload)); err != nil {
 		log.Println(err)
@@ -20,7 +20,7 @@ func HandleLoginStart(client *Client, payload []byte) {
 		Length: 0,
 	}
 
-	var responsePacket protocol.LoginSuccessPacketOutbound
+	var responsePacket protocol.PacketLoginOutSuccess
 	responsePacket.Profile = protocol.GameProfile{
 		Name:    packet.Name,
 		UUID:    packet.UUID,

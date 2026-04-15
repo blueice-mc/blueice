@@ -5,16 +5,16 @@ import (
 	"io"
 )
 
-type PluginClientMessagePacketOutbound struct {
+type PacketConfigOutPluginMessage struct {
 	Channel Identifier
 	Message []byte
 }
 
-func (p *PluginClientMessagePacketOutbound) ID() VarInt {
+func (p *PacketConfigOutPluginMessage) ID() VarInt {
 	return 0x01
 }
 
-func (p *PluginClientMessagePacketOutbound) WriteTo(w io.Writer) (int64, error) {
+func (p *PacketConfigOutPluginMessage) WriteTo(w io.Writer) (int64, error) {
 	size, err := p.Channel.WriteTo(w)
 	if err != nil {
 		return size, err
@@ -23,25 +23,21 @@ func (p *PluginClientMessagePacketOutbound) WriteTo(w io.Writer) (int64, error) 
 	return size + int64(n), err
 }
 
-func (p *PluginClientMessagePacketOutbound) ReadFrom(r io.Reader) (int64, error) {
-	panic("Outbound packet does not support ReadFrom")
-}
-
 type RegistryEntry struct {
 	EntryID Identifier
 	Data    PrefixedOptional[any]
 }
 
-type RegistryDataPacketOutbound struct {
+type PacketConfigOutRegistryData struct {
 	RegistryID Identifier
 	Entries    PrefixedArray[RegistryEntry]
 }
 
-func (p *RegistryDataPacketOutbound) ID() VarInt {
+func (p *PacketConfigOutRegistryData) ID() VarInt {
 	return 0x07
 }
 
-func (p *RegistryDataPacketOutbound) WriteTo(w io.Writer) (int64, error) {
+func (p *PacketConfigOutRegistryData) WriteTo(w io.Writer) (int64, error) {
 	size, err := p.RegistryID.WriteTo(w)
 	if err != nil {
 		return size, err
@@ -65,10 +61,6 @@ func (p *RegistryDataPacketOutbound) WriteTo(w io.Writer) (int64, error) {
 	return size, nil
 }
 
-func (p *RegistryDataPacketOutbound) ReadFrom(r io.Reader) (int64, error) {
-	panic("Outbound packet does not support ReadFrom")
-}
-
 type FinishConfigurationPacketOutbound struct{}
 
 func (p *FinishConfigurationPacketOutbound) ID() VarInt {
@@ -77,8 +69,4 @@ func (p *FinishConfigurationPacketOutbound) ID() VarInt {
 
 func (p *FinishConfigurationPacketOutbound) WriteTo(w io.Writer) (int64, error) {
 	return 0, nil
-}
-
-func (p *FinishConfigurationPacketOutbound) ReadFrom(r io.Reader) (int64, error) {
-	panic("Outbound packet does not support ReadFrom")
 }

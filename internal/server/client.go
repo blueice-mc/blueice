@@ -77,7 +77,7 @@ func (client *Client) Handle() {
 	}
 }
 
-func (client *Client) SendPacket(packet protocol.Packet) error {
+func (client *Client) SendPacket(packet protocol.ClientboundPacket) error {
 	var buffer bytes.Buffer
 
 	if _, err := packet.ID().WriteTo(&buffer); err != nil {
