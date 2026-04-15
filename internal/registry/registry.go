@@ -2,21 +2,33 @@ package registry
 
 import (
 	"BlueIce/internal/defs"
+	"BlueIce/internal/protocol"
 )
 
+type TagEntry struct {
+	Name protocol.Identifier
+	IDs  []protocol.VarInt
+}
+
+type Registry[T any] struct {
+	Entries map[protocol.Identifier]T
+	IDs     map[protocol.Identifier]protocol.VarInt
+	Tags    []TagEntry
+}
+
 type Registries struct {
-	CatSoundVariant       map[string]defs.CatSoundVariant
-	CatVariant            map[string]defs.CatVariant
-	ChickenSoundVariant   map[string]defs.ChickenSoundVariant
-	ChickenVariant        map[string]defs.ChickenVariant
-	CowSoundVariant       map[string]defs.CowSoundVariant
-	CowVariant            map[string]defs.CowVariant
-	PigSoundVariant       map[string]defs.PigSoundVariant
-	PigVariant            map[string]defs.PigVariant
-	WolfSoundVariant      map[string]defs.WolfSoundVariant
-	WolfVariant           map[string]defs.WolfVariant
-	FrogVariant           map[string]defs.FrogVariant
-	PaintingVariant       map[string]defs.PaintingVariant
-	ZombieNautilusVariant map[string]defs.ZombieNautilusVariant
-	DamageType            map[string]defs.DamageType
+	CatSoundVariant       Registry[defs.CatSoundVariant]
+	CatVariant            Registry[defs.CatVariant]
+	ChickenSoundVariant   Registry[defs.ChickenSoundVariant]
+	ChickenVariant        Registry[defs.ChickenVariant]
+	CowSoundVariant       Registry[defs.CowSoundVariant]
+	CowVariant            Registry[defs.CowVariant]
+	PigSoundVariant       Registry[defs.PigSoundVariant]
+	PigVariant            Registry[defs.PigVariant]
+	WolfSoundVariant      Registry[defs.WolfSoundVariant]
+	WolfVariant           Registry[defs.WolfVariant]
+	FrogVariant           Registry[defs.FrogVariant]
+	PaintingVariant       Registry[defs.PaintingVariant]
+	ZombieNautilusVariant Registry[defs.ZombieNautilusVariant]
+	DamageType            Registry[defs.DamageType]
 }

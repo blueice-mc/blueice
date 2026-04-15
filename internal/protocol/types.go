@@ -10,8 +10,8 @@ import (
 // Definition of the VarInt type and read/write functions
 type VarInt int32
 
-func (v VarInt) WriteTo(w io.Writer) (int64, error) {
-	value := uint32(v)
+func (v *VarInt) WriteTo(w io.Writer) (int64, error) {
+	value := uint32(*v)
 	var size int64
 	var buf [1]byte
 
@@ -77,8 +77,8 @@ func (v *VarInt) ReadFrom(r io.Reader) (int64, error) {
 // Definition of the VarLong type and read/write functions
 type VarLong int64
 
-func (v VarLong) WriteTo(w io.Writer) (int64, error) {
-	value := uint64(v)
+func (v *VarLong) WriteTo(w io.Writer) (int64, error) {
+	value := uint64(*v)
 	var size int64
 	var buf [1]byte
 
@@ -392,6 +392,27 @@ func (gpo *GameProfileOption) ReadFrom(r io.Reader) (int64, error) {
 type Identifier struct {
 	Namespace string
 	Path      string
+}
+
+func NewIdentifier(namespace, path string) Identifier {
+	return Identifier{
+		Namespace: namespace,
+		Path:      path,
+	}
+}
+
+func NewIdentifierFromPath(path string) Identifier {
+	return NewIdentifier("minecraft", path)
+}
+
+func NewIdentifierFromString(str string) Identifier {
+	splitted := strings.Split(str, ":")
+	if len(splitted) < 2 {
+		return NewIdentifier("minecraft", splitted[0])
+	} else if len(splitted) == 2 {
+		return NewIdentifier(splitted[0], splitted[1])
+	}
+	return Identifier{}
 }
 
 func (id *Identifier) String() string {

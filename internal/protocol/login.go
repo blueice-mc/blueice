@@ -10,7 +10,7 @@ type PacketLoginInStart struct {
 	UUID [16]byte
 }
 
-func (l PacketLoginInStart) ID() VarInt {
+func (l *PacketLoginInStart) ID() VarInt {
 	return 0x00
 }
 
@@ -34,11 +34,11 @@ type PacketLoginOutDisconnect struct {
 	Reason String
 }
 
-func (l PacketLoginOutDisconnect) ID() VarInt {
+func (l *PacketLoginOutDisconnect) ID() VarInt {
 	return 0x00
 }
 
-func (l PacketLoginOutDisconnect) WriteTo(w io.Writer) (int64, error) {
+func (l *PacketLoginOutDisconnect) WriteTo(w io.Writer) (int64, error) {
 	return l.Reason.WriteTo(w)
 }
 
@@ -46,7 +46,7 @@ type PacketLoginOutSuccess struct {
 	Profile GameProfile
 }
 
-func (l PacketLoginOutSuccess) ID() VarInt {
+func (l *PacketLoginOutSuccess) ID() VarInt {
 	return 0x02
 }
 

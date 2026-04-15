@@ -3,23 +3,25 @@ package server
 import (
 	"BlueIce/internal/defs"
 	"BlueIce/internal/protocol"
+	"BlueIce/internal/registry"
 	"bytes"
 	"log"
 	"sort"
 )
 
-func sendRegistryFromMap[T any](client *Client, registryPath string, entries map[string]T) error {
-	keys := make([]string, 0, len(entries))
-	for k := range entries {
-		keys = append(keys, k)
+func sendRegistryFromMap[T any](client *Client, registryID protocol.Identifier, registry registry.Registry[T]) error {
+	keys := make([]string, 0, len(registry.Entries))
+	for k := range registry.Entries {
+		keys = append(keys, k.Path)
 	}
 	sort.Strings(keys)
 
 	var registryEntries []protocol.RegistryEntry
 	for _, name := range keys {
-		data := entries[name]
+		id := protocol.NewIdentifier(registryID.Namespace, name)
+		data := registry.Entries[id]
 		registryEntries = append(registryEntries, protocol.RegistryEntry{
-			EntryID: protocol.Identifier{Namespace: "minecraft", Path: name},
+			EntryID: id,
 			Data: protocol.PrefixedOptional[any]{
 				Present: true,
 				Content: &data,
@@ -28,7 +30,7 @@ func sendRegistryFromMap[T any](client *Client, registryPath string, entries map
 	}
 
 	pkt := &protocol.PacketConfigOutRegistryData{
-		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: registryPath},
+		RegistryID: registryID,
 		Entries:    protocol.PrefixedArray[protocol.RegistryEntry]{Content: registryEntries},
 	}
 
@@ -38,7 +40,8 @@ func sendRegistryFromMap[T any](client *Client, registryPath string, entries map
 func StartConfiguration(client *Client) {
 	brand := "BlueIce"
 	var buf bytes.Buffer
-	if _, err := protocol.VarInt(len(brand)).WriteTo(&buf); err != nil {
+	length := protocol.VarInt(len(brand))
+	if _, err := length.WriteTo(&buf); err != nil {
 		log.Println(err)
 	}
 	buf.WriteString(brand)
@@ -197,26 +200,55 @@ func SendRegistryPackets(client *Client) {
 		log.Println("Error while sending biome", err)
 	}
 
-	sendRegistryFromMap(client, "cat_sound_variant", client.Server.Registries.CatSoundVariant)
-	sendRegistryFromMap(client, "cat_variant", client.Server.Registries.CatVariant)
-	sendRegistryFromMap(client, "chicken_sound_variant", client.Server.Registries.ChickenSoundVariant)
-	sendRegistryFromMap(client, "chicken_variant", client.Server.Registries.ChickenVariant)
-	sendRegistryFromMap(client, "cow_sound_variant", client.Server.Registries.CowSoundVariant)
-	sendRegistryFromMap(client, "cow_variant", client.Server.Registries.CowVariant)
-	sendRegistryFromMap(client, "pig_sound_variant", client.Server.Registries.PigSoundVariant)
-	sendRegistryFromMap(client, "pig_variant", client.Server.Registries.PigVariant)
-	sendRegistryFromMap(client, "wolf_sound_variant", client.Server.Registries.WolfSoundVariant)
-	sendRegistryFromMap(client, "wolf_variant", client.Server.Registries.WolfVariant)
-	sendRegistryFromMap(client, "frog_variant", client.Server.Registries.FrogVariant)
-	sendRegistryFromMap(client, "painting_variant", client.Server.Registries.PaintingVariant)
-	sendRegistryFromMap(client, "zombie_nautilus_variant", client.Server.Registries.ZombieNautilusVariant)
-	sendRegistryFromMap(client, "damage_type", client.Server.Registries.DamageType)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_sound_variant"), client.Server.Registries.CatSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_variant"), client.Server.Registries.CatVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chicken_sound_variant"), client.Server.Registries.ChickenSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chicken_variant"), client.Server.Registries.ChickenVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cow_sound_variant"), client.Server.Registries.CowSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cow_variant"), client.Server.Registries.CowVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("pig_sound_variant"), client.Server.Registries.PigSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("pig_variant"), client.Server.Registries.PigVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("wolf_sound_variant"), client.Server.Registries.WolfSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("wolf_variant"), client.Server.Registries.WolfVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("frog_variant"), client.Server.Registries.FrogVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("painting_variant"), client.Server.Registries.PaintingVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("zombie_nautilus_variant"), client.Server.Registries.ZombieNautilusVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("damage_type"), client.Server.Registries.DamageType)
+
+	SendTagUpdate(client)
+}
+
+func SendTagUpdate(client *Client) {
+	var tagUpdatePacket protocol.PacketConfigOutUpdateTags
+
+	registryTags := protocol.RegistryTags{
+		Registry: protocol.Identifier{Namespace: "minecraft", Path: "damage_type"},
+	}
+
+	for _, tagEntry := range client.Server.Registries.DamageType.Tags {
+		tag := protocol.Tag{}
+
+		tag.TagName = tagEntry.Name
+		tag.Entries = protocol.PrefixedArray[protocol.VarInt]{
+			Content: tagEntry.IDs,
+		}
+
+		registryTags.Tags.Content = append(registryTags.Tags.Content, tag)
+	}
+
+	tagUpdatePacket.TaggedRegistries = protocol.PrefixedArray[protocol.RegistryTags]{
+		Content: []protocol.RegistryTags{registryTags},
+	}
+
+	if err := client.SendPacket(&tagUpdatePacket); err != nil {
+		log.Println("Error while sending tag_update", err)
+	}
 
 	FinishConfiguration(client)
 }
 
 func FinishConfiguration(client *Client) {
-	var finishPacket protocol.FinishConfigurationPacketOutbound
+	var finishPacket protocol.PacketConfigOutFinish
 	if err := client.SendPacket(&finishPacket); err != nil {
 		log.Println("Error while sending finish_configuration", err)
 	}

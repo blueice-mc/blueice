@@ -52,7 +52,7 @@ func (p *PacketConfigOutRegistryData) WriteTo(w io.Writer) (int64, error) {
 			return nbt.WriteNBT(w, t)
 		}
 		n, err := t.Data.WriteTo(w)
-		size += int64(n)
+		size += n
 		return size, err
 	}
 
@@ -61,12 +61,58 @@ func (p *PacketConfigOutRegistryData) WriteTo(w io.Writer) (int64, error) {
 	return size, nil
 }
 
-type FinishConfigurationPacketOutbound struct{}
+type PacketConfigOutFinish struct{}
 
-func (p *FinishConfigurationPacketOutbound) ID() VarInt {
+func (p *PacketConfigOutFinish) ID() VarInt {
 	return 0x03
 }
 
-func (p *FinishConfigurationPacketOutbound) WriteTo(w io.Writer) (int64, error) {
+func (p *PacketConfigOutFinish) WriteTo(w io.Writer) (int64, error) {
 	return 0, nil
+}
+
+type Tag struct {
+	TagName Identifier
+	Entries PrefixedArray[VarInt]
+}
+
+type RegistryTags struct {
+	Registry Identifier
+	Tags     PrefixedArray[Tag]
+}
+
+type PacketConfigOutUpdateTags struct {
+	TaggedRegistries PrefixedArray[RegistryTags]
+}
+
+func (p *PacketConfigOutUpdateTags) ID() VarInt {
+	return 0x0D
+}
+
+func (p *PacketConfigOutUpdateTags) WriteTo(w io.Writer) (int64, error) {
+	p.TaggedRegistries.Writer = func(w io.Writer, r RegistryTags) (int64, error) {
+		total, err := r.Registry.WriteTo(w)
+		if err != nil {
+			return total, err
+		}
+
+		r.Tags.Writer = func(w io.Writer, t Tag) (int64, error) {
+			total, err := t.TagName.WriteTo(w)
+			if err != nil {
+				return total, err
+			}
+			t.Entries.Writer = func(w io.Writer, v VarInt) (int64, error) {
+				return v.WriteTo(w)
+			}
+			n, err := t.Entries.WriteTo(w)
+			total += n
+			return total, err
+		}
+
+		n, err := r.Tags.WriteTo(w)
+		total += n
+		return total, err
+	}
+
+	return p.TaggedRegistries.WriteTo(w)
 }

@@ -80,7 +80,9 @@ func (client *Client) Handle() {
 func (client *Client) SendPacket(packet protocol.ClientboundPacket) error {
 	var buffer bytes.Buffer
 
-	if _, err := packet.ID().WriteTo(&buffer); err != nil {
+	id := packet.ID()
+
+	if _, err := id.WriteTo(&buffer); err != nil {
 		return err
 	}
 

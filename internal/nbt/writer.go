@@ -82,7 +82,7 @@ func tagTypeOf(v reflect.Value) TagType {
 		default:
 			return TagList
 		}
-	case reflect.Struct:
+	case reflect.Struct | reflect.Map:
 		return TagCompound
 	default:
 		return TagEnd
@@ -120,6 +120,9 @@ func writeValue(w io.Writer, v reflect.Value) (int64, error) {
 	case TagList:
 		return writeList(w, v)
 	case TagCompound:
+		if v.Kind() == reflect.Map {
+			return writeMap(w, v)
+		}
 		return writeCompound(w, v)
 	default:
 		return 0, fmt.Errorf("unknown tag type: %v", v.Type())
@@ -155,6 +158,26 @@ func writeList(w io.Writer, v reflect.Value) (int64, error) {
 	}
 
 	return total, nil
+}
+
+func writeMap(w io.Writer, v reflect.Value) (int64, error) {
+	total := int64(0)
+	for _, key := range v.MapKeys() {
+		val := v.MapIndex(key)
+		n, err := writeNamedTagHeader(w, tagTypeOf(val), key.String())
+		total += n
+		if err != nil {
+			return total, err
+		}
+		n, err = writeValue(w, val)
+		total += n
+		if err != nil {
+			return total, err
+		}
+	}
+	n, err := w.Write([]byte{byte(TagEnd)})
+	total += int64(n)
+	return total, err
 }
 
 func writeCompound(w io.Writer, v reflect.Value) (int64, error) {

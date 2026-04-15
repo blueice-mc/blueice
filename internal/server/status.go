@@ -21,7 +21,7 @@ func HandleStatusRequest(client *Client, payload []byte) {
 		Status: responseJson,
 	}
 
-	if err := client.SendPacket(statusPacket); err != nil {
+	if err := client.SendPacket(&statusPacket); err != nil {
 		log.Println(err)
 	}
 }
@@ -34,7 +34,7 @@ func HandlePingRequest(client *Client, payload []byte) {
 		return
 	}
 
-	if err := client.SendPacket(pingPacket); err != nil {
+	if err := client.SendPacket(&pingPacket); err != nil {
 		log.Println(err)
 	}
 }
