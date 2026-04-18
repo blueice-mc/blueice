@@ -82,7 +82,9 @@ func tagTypeOf(v reflect.Value) TagType {
 		default:
 			return TagList
 		}
-	case reflect.Struct | reflect.Map:
+	case reflect.Struct:
+		return TagCompound
+	case reflect.Map:
 		return TagCompound
 	default:
 		return TagEnd

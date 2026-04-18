@@ -200,5 +200,34 @@ func (r *Registries) LoadAll(dataDir string) error {
 		r.DamageType.Tags = append(r.DamageType.Tags, entry)
 	}
 
+	if err := Load[defs.TrimMaterial](dataDir, protocol.NewIdentifierFromPath("trim_material"), &r.TrimMaterial); err != nil {
+		return err
+	}
+
+	if err := Load[defs.JukeboxSong](dataDir, protocol.NewIdentifierFromPath("jukebox_song"), &r.JukeboxSong); err != nil {
+		return err
+	}
+
+	if err := Load[defs.BannerPattern](dataDir, protocol.NewIdentifierFromPath("banner_pattern"), &r.BannerPattern); err != nil {
+		return err
+	}
+
+	tags, err = LoadTags(dataDir, protocol.NewIdentifierFromPath("banner_pattern"), r.BannerPattern.IDs)
+	if err != nil {
+		return err
+	}
+
+	for tag, ids := range tags {
+		entry := TagEntry{
+			Name: tag,
+			IDs:  ids,
+		}
+		r.BannerPattern.Tags = append(r.BannerPattern.Tags, entry)
+	}
+
+	if err := Load[defs.Instrument](dataDir, protocol.NewIdentifierFromPath("instrument"), &r.Instrument); err != nil {
+		return err
+	}
+
 	return nil
 }

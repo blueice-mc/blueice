@@ -463,3 +463,76 @@ func (id *Identifier) ReadFrom(r io.Reader) (int64, error) {
 
 	return size, nil
 }
+
+type Position struct {
+	X, Z int32
+	Y    int16
+}
+
+func (pos *Position) WriteTo(w io.Writer) (int64, error) {
+	total := int64(0)
+
+	var encoded = uint64(0)
+	x := uint64(uint32(pos.X)) // Casting twice because uint64 should be filled with 0 and not 1
+	encoded |= (x >> 31) << 25 // Writing sign
+	encoded |= x & 0x1FFFFFF   // Writing payload
+	encoded <<= 26             // Shifting for next writing
+
+	z := uint64(uint32(pos.Z))
+	encoded |= (z >> 31) << 25
+	encoded |= z & 0x1FFFFFF
+	encoded <<= 26
+
+	y := uint64(uint16(pos.Y))
+	encoded |= (y >> 15) << 11
+	encoded |= y & 0x7FF
+
+	var buffer [8]byte
+	binary.BigEndian.PutUint64(buffer[:], encoded)
+	total += int64(len(buffer))
+	_, err := w.Write(buffer[:])
+	return total, err
+}
+
+func (pos *Position) ReadFrom(r io.Reader) (int64, error) {
+	var buffer [8]byte
+	n, err := r.Read(buffer[:])
+	if err != nil {
+		return int64(n), err
+	}
+
+	encoded := binary.BigEndian.Uint64(buffer[:])
+	y := uint64(0)
+	y |= encoded & 0x7FF
+	encoded >>= 11
+
+	if encoded&0x1 != 0 {
+		y |= 0xF800
+	}
+
+	pos.Y = int16(y)
+
+	encoded >>= 1
+
+	z := uint64(0)
+	z |= encoded & 0x1FFFFFF
+	encoded >>= 25
+	if encoded&0x1 != 0 {
+		z |= 0xFC000000
+	}
+
+	pos.Z = int32(z)
+
+	encoded >>= 1
+
+	x := uint64(0)
+	x |= encoded & 0x1FFFFFF
+	encoded >>= 25
+	if encoded&0x1 != 0 {
+		x |= 0xFC000000
+	}
+
+	pos.X = int32(x)
+
+	return int64(n), nil
+}

@@ -196,3 +196,41 @@ type DamageType struct {
 	MessageID  string  `nbt:"message_id"        json:"message_id"`
 	Scaling    string  `nbt:"scaling"           json:"scaling"`
 }
+
+type TextComponent struct {
+	Text          string          `nbt:"text,omitempty"       json:"text,omitempty"`
+	Translate     string          `nbt:"translate,omitempty"  json:"translate,omitempty"`
+	Color         string          `nbt:"color,omitempty"      json:"color,omitempty"`
+	Bold          *bool           `nbt:"bold,omitempty"       json:"bold,omitempty"`
+	Italic        *bool           `nbt:"italic,omitempty"     json:"italic,omitempty"`
+	Underline     *bool           `nbt:"underlined,omitempty" json:"underlined,omitempty"`
+	Strikethrough *bool           `nbt:"strikethrough,omitempty" json:"strikethrough,omitempty"`
+	Obfuscated    *bool           `nbt:"obfuscated,omitempty" json:"obfuscated,omitempty"`
+	Insertion     string          `nbt:"insertion,omitempty"  json:"insertion,omitempty"`
+	Extra         []TextComponent `nbt:"extra,omitempty"      json:"extra,omitempty"`
+}
+
+type TrimMaterial struct {
+	AssetName           string            `nbt:"asset_name"                      json:"asset_name"`
+	Description         TextComponent     `nbt:"description"                     json:"description"`
+	OverrideArmorAssets map[string]string `nbt:"override_armor_assets,omitempty" json:"override_armor_assets,omitempty"`
+}
+
+type JukeboxSong struct {
+	ComparatorOutput int32         `nbt:"comparator_output" json:"comparator_output"`
+	Description      TextComponent `nbt:"description"       json:"description"`
+	LengthInSeconds  float32       `nbt:"length_in_seconds" json:"length_in_seconds"`
+	SoundEvent       string        `nbt:"sound_event"       json:"sound_event"`
+}
+
+type BannerPattern struct {
+	AssetID        string `nbt:"asset_id"        json:"asset_id"`
+	TranslationKey string `nbt:"translation_key" json:"translation_key"`
+}
+
+type Instrument struct {
+	Description TextComponent `nbt:"description"   json:"description"`
+	Range       float32       `nbt:"range"         json:"range"`
+	SoundEvent  string        `nbt:"sound_event"   json:"sound_event"`
+	UseDuration float32       `nbt:"use_duration"  json:"use_duration"`
+}

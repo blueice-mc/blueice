@@ -214,6 +214,10 @@ func SendRegistryPackets(client *Client) {
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("painting_variant"), client.Server.Registries.PaintingVariant)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("zombie_nautilus_variant"), client.Server.Registries.ZombieNautilusVariant)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("damage_type"), client.Server.Registries.DamageType)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("trim_material"), client.Server.Registries.TrimMaterial)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("jukebox_song"), client.Server.Registries.JukeboxSong)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("banner_pattern"), client.Server.Registries.BannerPattern)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("instrument"), client.Server.Registries.Instrument)
 
 	SendTagUpdate(client)
 }
@@ -221,23 +225,32 @@ func SendRegistryPackets(client *Client) {
 func SendTagUpdate(client *Client) {
 	var tagUpdatePacket protocol.PacketConfigOutUpdateTags
 
-	registryTags := protocol.RegistryTags{
-		Registry: protocol.Identifier{Namespace: "minecraft", Path: "damage_type"},
+	type registryTagSource struct {
+		registryID protocol.Identifier
+		tags       []registry.TagEntry
 	}
 
-	for _, tagEntry := range client.Server.Registries.DamageType.Tags {
-		tag := protocol.Tag{}
+	sources := []registryTagSource{
+		{protocol.Identifier{Namespace: "minecraft", Path: "damage_type"}, client.Server.Registries.DamageType.Tags},
+		{protocol.Identifier{Namespace: "minecraft", Path: "banner_pattern"}, client.Server.Registries.BannerPattern.Tags},
+	}
 
-		tag.TagName = tagEntry.Name
-		tag.Entries = protocol.PrefixedArray[protocol.VarInt]{
-			Content: tagEntry.IDs,
+	for _, source := range sources {
+		registryTags := protocol.RegistryTags{
+			Registry: source.registryID,
 		}
 
-		registryTags.Tags.Content = append(registryTags.Tags.Content, tag)
-	}
+		for _, tagEntry := range source.tags {
+			tag := protocol.Tag{
+				TagName: tagEntry.Name,
+				Entries: protocol.PrefixedArray[protocol.VarInt]{
+					Content: tagEntry.IDs,
+				},
+			}
+			registryTags.Tags.Content = append(registryTags.Tags.Content, tag)
+		}
 
-	tagUpdatePacket.TaggedRegistries = protocol.PrefixedArray[protocol.RegistryTags]{
-		Content: []protocol.RegistryTags{registryTags},
+		tagUpdatePacket.TaggedRegistries.Content = append(tagUpdatePacket.TaggedRegistries.Content, registryTags)
 	}
 
 	if err := client.SendPacket(&tagUpdatePacket); err != nil {

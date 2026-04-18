@@ -31,4 +31,8 @@ type Registries struct {
 	PaintingVariant       Registry[defs.PaintingVariant]
 	ZombieNautilusVariant Registry[defs.ZombieNautilusVariant]
 	DamageType            Registry[defs.DamageType]
+	TrimMaterial          Registry[defs.TrimMaterial]
+	JukeboxSong           Registry[defs.JukeboxSong]
+	BannerPattern         Registry[defs.BannerPattern]
+	Instrument            Registry[defs.Instrument]
 }
