@@ -14,7 +14,7 @@ func HandleLoginStart(client *Client, payload []byte) {
 		return
 	}
 
-	log.Printf("Player %s is trying to log in", string(packet.Name.Content))
+	log.Printf("Player %s is trying to log in", packet.Name)
 
 	options := protocol.PrefixedArray[protocol.GameProfileOption]{
 		Length: 0,

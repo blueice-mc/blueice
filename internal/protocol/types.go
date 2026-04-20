@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"BlueIce/internal/nbt"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -144,9 +145,7 @@ func (v *VarLong) ReadFrom(r io.Reader) (int64, error) {
 type PrefixedArray[T any] struct {
 	Length  VarInt
 	Content []T
-
-	Writer func(io.Writer, T) (int64, error)
-	Reader func(io.Reader, *T) (int64, error)
+	Reader  func(io.Reader, *T) (int64, error)
 }
 
 func (p *PrefixedArray[T]) WriteTo(w io.Writer) (int64, error) {
@@ -158,8 +157,8 @@ func (p *PrefixedArray[T]) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	for _, element := range p.Content {
-		n, err := p.Writer(w, element)
-		size += int64(n)
+		n, err := serialize(w, element)
+		size += n
 		if err != nil {
 			return size, err
 		}
@@ -179,7 +178,7 @@ func (p *PrefixedArray[T]) ReadFrom(r io.Reader) (int64, error) {
 	for i := range p.Content {
 		var element T
 		n, err := p.Reader(r, &element)
-		size += int64(n)
+		size += n
 		if err != nil {
 			return size, err
 		}
@@ -189,44 +188,10 @@ func (p *PrefixedArray[T]) ReadFrom(r io.Reader) (int64, error) {
 	return size, nil
 }
 
-type String PrefixedArray[byte]
-
-func NewString(s string) String {
-	return String{
-		Length:  VarInt(len(s)),
-		Content: []byte(s),
-	}
-}
-
-func (s *String) WriteTo(w io.Writer) (int64, error) {
-	if s.Writer == nil {
-		s.Writer = func(w io.Writer, b byte) (int64, error) {
-			n, err := w.Write([]byte{b})
-			return int64(n), err
-		}
-	}
-
-	return (*PrefixedArray[byte])(s).WriteTo(w)
-}
-
-func (s *String) ReadFrom(r io.Reader) (int64, error) {
-	if s.Reader == nil {
-		s.Reader = func(r io.Reader, b *byte) (int64, error) {
-			buf := make([]byte, 1)
-			n, err := r.Read(buf)
-			*b = buf[0]
-			return int64(n), err
-		}
-	}
-
-	return (*PrefixedArray[byte])(s).ReadFrom(r)
-}
-
 type PrefixedOptional[T any] struct {
 	Present bool
 	Content T
 
-	Writer func(io.Writer, T) (int64, error)
 	Reader func(io.Reader, *T) (int64, error)
 }
 
@@ -237,20 +202,16 @@ func (p *PrefixedOptional[T]) WriteTo(w io.Writer) (int64, error) {
 			return int64(size), err
 		}
 
-		if p.Writer == nil {
-			return int64(size), errors.New("writer is nil even though field is present")
-		}
-
-		n, err := p.Writer(w, p.Content)
+		n, err := serialize(w, p.Content)
 		size += int(n)
 		return int64(size), err
-	} else {
-		size, err := w.Write([]byte{0})
-		if err != nil {
-			return int64(size), err
-		}
+	}
+
+	size, err := w.Write([]byte{0})
+	if err != nil {
 		return int64(size), err
 	}
+	return int64(size), err
 }
 
 func (p *PrefixedOptional[T]) ReadFrom(r io.Reader) (int64, error) {
@@ -279,7 +240,7 @@ func (p *PrefixedOptional[T]) ReadFrom(r io.Reader) (int64, error) {
 
 type GameProfile struct {
 	UUID    [16]byte
-	Name    String
+	Name    string
 	Options PrefixedArray[GameProfileOption]
 }
 
@@ -289,14 +250,10 @@ func (p *GameProfile) WriteTo(w io.Writer) (int64, error) {
 		return int64(size), err
 	}
 
-	n, err := p.Name.WriteTo(w)
+	n, err := WriteString(w, p.Name)
 	size += int(n)
 	if err != nil {
 		return int64(size), err
-	}
-
-	p.Options.Writer = func(w io.Writer, gpo GameProfileOption) (int64, error) {
-		return gpo.WriteTo(w)
 	}
 
 	n, err = p.Options.WriteTo(w)
@@ -314,7 +271,7 @@ func (p *GameProfile) ReadFrom(r io.Reader) (int64, error) {
 		return int64(size), err
 	}
 
-	n, err := p.Name.ReadFrom(r)
+	n, err := ReadString(r, &p.Name)
 	size += int(n)
 	if err != nil {
 		return int64(size), err
@@ -334,25 +291,21 @@ func (p *GameProfile) ReadFrom(r io.Reader) (int64, error) {
 }
 
 type GameProfileOption struct {
-	Name      String
-	Value     String
-	Signature PrefixedOptional[String]
+	Name      string
+	Value     string
+	Signature PrefixedOptional[string]
 }
 
 func (gpo *GameProfileOption) WriteTo(w io.Writer) (int64, error) {
-	size, err := gpo.Name.WriteTo(w)
+	size, err := WriteString(w, gpo.Name)
 	if err != nil {
 		return size, err
 	}
 
-	n, err := gpo.Value.WriteTo(w)
+	n, err := WriteString(w, gpo.Value)
 	size += n
 	if err != nil {
 		return size, err
-	}
-
-	gpo.Signature.Writer = func(w io.Writer, s String) (int64, error) {
-		return s.WriteTo(w)
 	}
 
 	n, err = gpo.Signature.WriteTo(w)
@@ -365,19 +318,19 @@ func (gpo *GameProfileOption) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (gpo *GameProfileOption) ReadFrom(r io.Reader) (int64, error) {
-	size, err := gpo.Name.ReadFrom(r)
+	size, err := ReadString(r, &gpo.Name)
 	if err != nil {
 		return size, err
 	}
 
-	n, err := gpo.Value.ReadFrom(r)
+	n, err := ReadString(r, &gpo.Value)
 	size += n
 	if err != nil {
 		return size, err
 	}
 
-	gpo.Signature.Reader = func(r io.Reader, s *String) (int64, error) {
-		return s.ReadFrom(r)
+	gpo.Signature.Reader = func(r io.Reader, s *string) (int64, error) {
+		return ReadString(r, s)
 	}
 
 	n, err = gpo.Signature.ReadFrom(r)
@@ -535,4 +488,12 @@ func (pos *Position) ReadFrom(r io.Reader) (int64, error) {
 	pos.X = int32(x)
 
 	return int64(n), nil
+}
+
+type NBTValue struct {
+	Value any
+}
+
+func (v *NBTValue) WriteTo(w io.Writer) (int64, error) {
+	return nbt.WriteNBT(w, v.Value)
 }

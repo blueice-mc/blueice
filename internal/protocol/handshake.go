@@ -7,7 +7,7 @@ import (
 
 type PacketHandshakeIn struct {
 	ProtocolVersion VarInt
-	ServerAddress   String
+	ServerAddress   string
 	ServerPort      uint16
 
 	Intent VarInt
@@ -25,8 +25,8 @@ func (h *PacketHandshakeIn) ReadFrom(reader io.Reader) (int64, error) {
 		return size, err
 	}
 
-	var serverAddress String
-	n, err = serverAddress.ReadFrom(reader)
+	var serverAddress string
+	n, err = ReadString(reader, &serverAddress)
 	size += n
 	if err != nil {
 		return size, err

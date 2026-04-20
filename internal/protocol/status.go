@@ -6,7 +6,7 @@ import (
 )
 
 type PacketStatusOut struct {
-	Status String
+	Status string
 }
 
 func (packet *PacketStatusOut) ID() VarInt {
@@ -14,7 +14,7 @@ func (packet *PacketStatusOut) ID() VarInt {
 }
 
 func (packet *PacketStatusOut) WriteTo(w io.Writer) (int64, error) {
-	return packet.Status.WriteTo(w)
+	return WriteString(w, packet.Status)
 }
 
 type PacketStatusPing struct {

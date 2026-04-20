@@ -13,6 +13,12 @@ func WriteBool(w io.Writer, v bool) (int64, error) {
 	return WriteInt8(w, 0)
 }
 
+// WriteUint8 writes a single unsigned byte to the given writer
+func WriteUint8(w io.Writer, v uint8) (int64, error) {
+	total, err := w.Write([]byte{v})
+	return int64(total), err
+}
+
 // WriteInt8 writes a single signed byte to the given writer
 func WriteInt8(w io.Writer, v int8) (int64, error) {
 	total, err := w.Write([]byte{byte(v)})
@@ -57,4 +63,36 @@ func WriteFloat64(w io.Writer, v float64) (int64, error) {
 	binary.BigEndian.PutUint64(buffer[:], math.Float64bits(v))
 	total, err := w.Write(buffer[:])
 	return int64(total), err
+}
+
+func WriteString(w io.Writer, v string) (int64, error) {
+	total := int64(0)
+	length := VarInt(len(v))
+	n, err := length.WriteTo(w)
+	total += n
+	if err != nil {
+		return total, err
+	}
+	m, err := io.WriteString(w, v)
+	total += int64(m)
+	return total, nil
+}
+
+func ReadString(r io.Reader, v *string) (int64, error) {
+	total := int64(0)
+	var length VarInt
+	n, err := length.ReadFrom(r)
+	total += n
+	if err != nil {
+		return total, err
+	}
+
+	buffer := make([]byte, length)
+	m, err := io.ReadFull(r, buffer)
+	total += int64(m)
+	if err != nil {
+		return total, err
+	}
+	*v = string(buffer)
+	return total, nil
 }

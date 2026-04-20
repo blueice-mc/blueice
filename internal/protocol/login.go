@@ -6,7 +6,7 @@ import (
 )
 
 type PacketLoginInStart struct {
-	Name String
+	Name string
 	UUID [16]byte
 }
 
@@ -15,12 +15,12 @@ func (l *PacketLoginInStart) ID() VarInt {
 }
 
 func (l *PacketLoginInStart) ReadFrom(r io.Reader) (int64, error) {
-	n, err := l.Name.ReadFrom(r)
+	n, err := ReadString(r, &l.Name)
 	if err != nil {
 		return n, err
 	}
 
-	if l.Name.Length > 16 {
+	if len(l.Name) > 16 {
 		return n, errors.New("name is too long")
 	}
 
@@ -31,15 +31,11 @@ func (l *PacketLoginInStart) ReadFrom(r io.Reader) (int64, error) {
 }
 
 type PacketLoginOutDisconnect struct {
-	Reason String
+	Reason string
 }
 
 func (l *PacketLoginOutDisconnect) ID() VarInt {
 	return 0x00
-}
-
-func (l *PacketLoginOutDisconnect) WriteTo(w io.Writer) (int64, error) {
-	return l.Reason.WriteTo(w)
 }
 
 type PacketLoginOutSuccess struct {
@@ -48,8 +44,4 @@ type PacketLoginOutSuccess struct {
 
 func (l *PacketLoginOutSuccess) ID() VarInt {
 	return 0x02
-}
-
-func (l *PacketLoginOutSuccess) WriteTo(w io.Writer) (int64, error) {
-	return l.Profile.WriteTo(w)
 }

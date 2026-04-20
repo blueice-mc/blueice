@@ -22,9 +22,9 @@ func sendRegistryFromMap[T any](client *Client, registryID protocol.Identifier, 
 		data := registry.Entries[id]
 		registryEntries = append(registryEntries, protocol.RegistryEntry{
 			EntryID: id,
-			Data: protocol.PrefixedOptional[any]{
+			Data: protocol.PrefixedOptional[protocol.NBTValue]{
 				Present: true,
-				Content: &data,
+				Content: protocol.NBTValue{Value: &data},
 			},
 		})
 	}
@@ -72,9 +72,9 @@ func SendRegistryPackets(client *Client) {
 			Content: []protocol.RegistryEntry{
 				{
 					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "overworld"},
-					Data: protocol.PrefixedOptional[any]{
+					Data: protocol.PrefixedOptional[protocol.NBTValue]{
 						Present: true,
-						Content: defs.WorldClockEntry{},
+						Content: protocol.NBTValue{Value: defs.WorldClockEntry{}},
 					},
 				},
 			},
@@ -124,9 +124,9 @@ func SendRegistryPackets(client *Client) {
 			Content: []protocol.RegistryEntry{
 				{
 					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "overworld"},
-					Data: protocol.PrefixedOptional[any]{
+					Data: protocol.PrefixedOptional[protocol.NBTValue]{
 						Present: true,
-						Content: overworldData,
+						Content: protocol.NBTValue{Value: overworldData},
 					},
 				},
 			},
@@ -154,9 +154,9 @@ func SendRegistryPackets(client *Client) {
 			Content: []protocol.RegistryEntry{
 				{
 					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "chat"},
-					Data: protocol.PrefixedOptional[any]{
+					Data: protocol.PrefixedOptional[protocol.NBTValue]{
 						Present: true,
-						Content: chatData,
+						Content: protocol.NBTValue{Value: chatData},
 					},
 				},
 			},
@@ -187,9 +187,9 @@ func SendRegistryPackets(client *Client) {
 			Content: []protocol.RegistryEntry{
 				{
 					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "plains"},
-					Data: protocol.PrefixedOptional[any]{
+					Data: protocol.PrefixedOptional[protocol.NBTValue]{
 						Present: true,
-						Content: biomeData,
+						Content: protocol.NBTValue{Value: biomeData},
 					},
 				},
 			},
