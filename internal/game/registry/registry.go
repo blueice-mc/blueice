@@ -1,8 +1,8 @@
 package registry
 
 import (
-	"BlueIce/internal/defs"
-	"BlueIce/internal/protocol"
+	"BlueIce/internal/game/defs"
+	"BlueIce/internal/network/protocol"
 )
 
 type TagEntry struct {

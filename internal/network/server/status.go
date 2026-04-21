@@ -1,7 +1,7 @@
 package server
 
 import (
-	"BlueIce/internal/protocol"
+	"BlueIce/internal/network/protocol"
 	"bytes"
 	"log"
 	"strconv"

@@ -1,7 +1,8 @@
 package server
 
 import (
-	"BlueIce/internal/protocol"
+	"BlueIce/internal/game/entity"
+	"BlueIce/internal/network/protocol"
 	"bytes"
 	"io"
 	"log"
@@ -9,9 +10,11 @@ import (
 )
 
 type Client struct {
-	Connection net.Conn
-	State      int32
-	Server     *MinecraftServer
+	Connection     net.Conn
+	State          int32
+	Server         *MinecraftServer
+	PendingProfile *protocol.GameProfile
+	Player         *entity.Player
 }
 
 func NewClient(conn net.Conn, server *MinecraftServer) *Client {
@@ -20,6 +23,10 @@ func NewClient(conn net.Conn, server *MinecraftServer) *Client {
 		State:      0,
 		Server:     server,
 	}
+}
+
+func (client *Client) GetAddress() string {
+	return client.Connection.RemoteAddr().String()
 }
 
 func (client *Client) Handle() {

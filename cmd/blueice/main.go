@@ -3,7 +3,7 @@ package main
 import (
 	"BlueIce/internal/config"
 	"BlueIce/internal/mojang"
-	"BlueIce/internal/server"
+	"BlueIce/internal/network/server"
 	"log"
 	"os"
 	"path/filepath"

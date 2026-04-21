@@ -2,8 +2,9 @@ package server
 
 import (
 	"BlueIce/internal/config"
+	"BlueIce/internal/game/entity"
+	"BlueIce/internal/game/registry"
 	"BlueIce/internal/mojang"
-	"BlueIce/internal/registry"
 	"fmt"
 	"log"
 	"net"
@@ -26,6 +27,7 @@ type MinecraftServer struct {
 
 	mu              sync.RWMutex
 	Clients         []*Client
+	Players         []*entity.Player
 	PacketListeners map[PacketKey][]PacketListener
 	Registries      registry.Registries
 }
@@ -42,6 +44,7 @@ func NewMinecraftServer(serverConfig config.ServerConfig, path string) *Minecraf
 	minecraftServer.RegisterPacketListener(1, 0x00, HandleStatusRequest)
 	minecraftServer.RegisterPacketListener(1, 0x01, HandlePingRequest)
 	minecraftServer.RegisterPacketListener(2, 0x00, HandleLoginStart)
+	minecraftServer.RegisterPacketListener(2, 0x03, HandleLoginAcknowledged)
 	minecraftServer.RegisterPacketListener(3, 0x03, HandleConfigurationAcknowledgement)
 
 	return &minecraftServer

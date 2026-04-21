@@ -139,3 +139,11 @@ type PacketPlayOutPlayerPosition struct {
 func (p *PacketPlayOutPlayerPosition) ID() VarInt {
 	return 0x48
 }
+
+type PacketPlayOutDisconnect struct {
+	Reason NBTValue // text component encoded as NBT
+}
+
+func (p *PacketPlayOutDisconnect) ID() VarInt {
+	return 0x20
+}

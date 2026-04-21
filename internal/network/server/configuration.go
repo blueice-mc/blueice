@@ -1,9 +1,9 @@
 package server
 
 import (
-	"BlueIce/internal/defs"
-	"BlueIce/internal/protocol"
-	"BlueIce/internal/registry"
+	"BlueIce/internal/game/defs"
+	"BlueIce/internal/game/registry"
+	"BlueIce/internal/network/protocol"
 	"bytes"
 	"log"
 	"sort"
