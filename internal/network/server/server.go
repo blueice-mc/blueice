@@ -1,15 +1,16 @@
 package server
 
 import (
-	"BlueIce/internal/config"
-	"BlueIce/internal/game/entity"
-	"BlueIce/internal/game/registry"
-	"BlueIce/internal/mojang"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"sync"
+
+	"github.com/blueice-mc/blueice/internal/config"
+	"github.com/blueice-mc/blueice/internal/game/entity"
+	"github.com/blueice-mc/blueice/internal/game/registry"
+	"github.com/blueice-mc/blueice/internal/mojang"
 )
 
 const MaximumPacketSize = 2097151

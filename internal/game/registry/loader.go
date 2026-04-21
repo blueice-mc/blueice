@@ -1,14 +1,15 @@
 package registry
 
 import (
-	"BlueIce/internal/game/defs"
-	"BlueIce/internal/network/protocol"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/blueice-mc/blueice/internal/game/defs"
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 func Load[T any](dataDir string, registryID protocol.Identifier, registry *Registry[T]) error {

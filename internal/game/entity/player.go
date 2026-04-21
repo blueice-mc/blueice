@@ -1,9 +1,10 @@
 package entity
 
 import (
-	"BlueIce/internal/game/defs"
-	"BlueIce/internal/network/protocol"
 	"log"
+
+	"github.com/blueice-mc/blueice/internal/game/defs"
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 type Connection interface {

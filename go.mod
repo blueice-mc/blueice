@@ -1,4 +1,4 @@
-module BlueIce
+module github.com/blueice-mc/blueice
 
 go 1.25
 

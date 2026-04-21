@@ -1,12 +1,13 @@
 package protocol
 
 import (
-	"BlueIce/internal/nbt"
 	"encoding/binary"
 	"errors"
 	"io"
 	"math"
 	"strings"
+
+	"github.com/blueice-mc/blueice/internal/nbt"
 )
 
 // Definition of the VarInt type and read/write functions

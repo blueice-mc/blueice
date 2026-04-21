@@ -1,10 +1,11 @@
 package server
 
 import (
-	"BlueIce/internal/network/protocol"
 	"bytes"
 	"log"
 	"strconv"
+
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 func HandleStatusRequest(client *Client, payload []byte) {

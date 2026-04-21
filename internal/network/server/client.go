@@ -1,12 +1,13 @@
 package server
 
 import (
-	"BlueIce/internal/game/entity"
-	"BlueIce/internal/network/protocol"
 	"bytes"
 	"io"
 	"log"
 	"net"
+
+	"github.com/blueice-mc/blueice/internal/game/entity"
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 type Client struct {

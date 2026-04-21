@@ -1,13 +1,14 @@
 package mojang
 
 import (
-	"BlueIce/internal/version"
 	"archive/zip"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/blueice-mc/blueice/internal/version"
 )
 
 func unzipInnerJar(path string, version string) error {
@@ -108,7 +109,7 @@ func FetchMinecraftData(path string) error {
 	if err := unzipInnerJar(path+"/server.jar", version.GameVersion); err != nil {
 		return err
 	}
-	
+
 	if err := unzipJar(path + "/server-" + version.GameVersion + ".jar"); err != nil {
 		return err
 	}

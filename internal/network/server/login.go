@@ -1,10 +1,11 @@
 package server
 
 import (
-	"BlueIce/internal/game/entity"
-	"BlueIce/internal/network/protocol"
 	"bytes"
 	"log"
+
+	"github.com/blueice-mc/blueice/internal/game/entity"
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 func HandleLoginStart(client *Client, payload []byte) {

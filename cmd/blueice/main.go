@@ -1,12 +1,13 @@
 package main
 
 import (
-	"BlueIce/internal/config"
-	"BlueIce/internal/mojang"
-	"BlueIce/internal/network/server"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/blueice-mc/blueice/internal/config"
+	"github.com/blueice-mc/blueice/internal/mojang"
+	"github.com/blueice-mc/blueice/internal/network/server"
 )
 
 func main() {

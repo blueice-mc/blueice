@@ -1,12 +1,13 @@
 package server
 
 import (
-	"BlueIce/internal/game/defs"
-	"BlueIce/internal/game/registry"
-	"BlueIce/internal/network/protocol"
 	"bytes"
 	"log"
 	"sort"
+
+	"github.com/blueice-mc/blueice/internal/game/defs"
+	"github.com/blueice-mc/blueice/internal/game/registry"
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 func sendRegistryFromMap[T any](client *Client, registryID protocol.Identifier, registry registry.Registry[T]) error {

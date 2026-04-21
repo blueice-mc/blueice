@@ -1,9 +1,10 @@
 package server
 
 import (
-	"BlueIce/internal/network/protocol"
 	"bytes"
 	"log"
+
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 func StartPlay(client *Client) {

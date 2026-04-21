@@ -1,8 +1,6 @@
 package main
 
 import (
-	"BlueIce/internal/mojang"
-	"BlueIce/internal/version"
 	"encoding/json"
 	"log"
 	"maps"
@@ -11,6 +9,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+
+	"github.com/blueice-mc/blueice/internal/mojang"
+	"github.com/blueice-mc/blueice/internal/version"
 )
 
 type BlockState struct {
