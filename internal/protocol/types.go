@@ -598,3 +598,22 @@ func (h *Heightmap) WriteTo(w io.Writer) (int64, error) {
 
 	return total, nil
 }
+
+type LightArray [2048]uint8
+
+func (l *LightArray) WriteTo(w io.Writer) (int64, error) {
+	total := int64(0)
+	n, err := WriteInt32(w, int32(len(l)))
+	total += n
+	if err != nil {
+		return total, err
+	}
+	for _, value := range l {
+		n, err := w.Write([]byte{value})
+		total += int64(n)
+		if err != nil {
+			return total, err
+		}
+	}
+	return total, nil
+}

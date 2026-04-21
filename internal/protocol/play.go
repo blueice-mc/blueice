@@ -94,13 +94,33 @@ func (p *PacketPlayOutGameEvent) ID() VarInt {
 	return 0x26
 }
 
+type BlockEntity struct {
+	PackedXZ uint8
+	Y        int16
+	Type     VarInt
+	Data     NBTValue
+}
+
+type LightData struct {
+	SkyLightMask        BitSet
+	BlockLightMask      BitSet
+	EmptySkyLightMask   BitSet
+	EmptyBlockLightMask BitSet
+	SkyLightArray       PrefixedArray[LightArray]
+	BlockLightArray     PrefixedArray[LightArray]
+}
+
 type PacketPlayOutLevelChunkWithLight struct {
-	ChunkX int32
-	ChunkZ int32
+	ChunkX        int32
+	ChunkZ        int32
+	Heightmaps    PrefixedArray[Heightmap]
+	Data          PrefixedArray[uint8]
+	BlockEntities PrefixedArray[BlockEntity]
+	LightData     LightData
 }
 
 func (p *PacketPlayOutLevelChunkWithLight) ID() VarInt {
-	return 0x2C
+	return 0x2D
 }
 
 type PacketPlayOutPlayerPosition struct {

@@ -28,7 +28,9 @@ func (client *Client) Handle() {
 	for {
 		var length protocol.VarInt
 		if _, err := length.ReadFrom(client.Connection); err != nil {
-			log.Println("Read invalid packet length")
+			if err != io.EOF {
+				log.Println("Read invalid packet length: ", err)
+			}
 			break
 		}
 

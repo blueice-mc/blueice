@@ -2,6 +2,7 @@ package server
 
 import (
 	"BlueIce/internal/protocol"
+	"bytes"
 	"log"
 )
 
@@ -61,5 +62,63 @@ func StartPlay(client *Client) {
 
 	if err := client.SendPacket(playerPositionPacket); err != nil {
 		log.Println("Error while sending player_position", err)
+	}
+
+	SendEmptyChunks(client)
+}
+
+func NewEmptyChunk(chunkX, chunkZ int32) *protocol.PacketPlayOutLevelChunkWithLight {
+	var emptySkyLight protocol.BitSet
+	emptySkyLight.SetRange(0, 25)
+
+	var emptyBlockLight protocol.BitSet
+	emptyBlockLight.SetRange(0, 25)
+
+	worldSurface := &protocol.Heightmap{Type: 1, WorldHeight: 384}
+	motionBlocking := &protocol.Heightmap{Type: 4, WorldHeight: 384}
+
+	var sectionBuf bytes.Buffer
+
+	for i := 0; i < 24; i++ {
+		// nonEmptyBlockCount
+		protocol.WriteInt16(&sectionBuf, 0)
+		// fluidCount
+		protocol.WriteInt16(&sectionBuf, 0)
+		// Block PalettedContainer
+		protocol.WriteUint8(&sectionBuf, 0) // bits per entry = 0
+		varInt := protocol.VarInt(0)
+		varInt.WriteTo(&sectionBuf) // Luft ID
+		varInt.WriteTo(&sectionBuf) // 0 storage longs
+		// Biome PalettedContainer
+		protocol.WriteUint8(&sectionBuf, 0) // bits per entry = 0
+		varInt.WriteTo(&sectionBuf)         // plains ID
+		varInt.WriteTo(&sectionBuf)         // 0 storage longs
+	}
+
+	return &protocol.PacketPlayOutLevelChunkWithLight{
+		ChunkX: chunkX,
+		ChunkZ: chunkZ,
+		Heightmaps: protocol.PrefixedArray[protocol.Heightmap]{
+			Content: []protocol.Heightmap{*worldSurface, *motionBlocking},
+		},
+		Data:          protocol.PrefixedArray[uint8]{Content: sectionBuf.Bytes()},
+		BlockEntities: protocol.PrefixedArray[protocol.BlockEntity]{Content: []protocol.BlockEntity{}},
+		LightData: protocol.LightData{
+			SkyLightMask:        protocol.BitSet{},
+			BlockLightMask:      protocol.BitSet{},
+			EmptySkyLightMask:   emptySkyLight,
+			EmptyBlockLightMask: emptyBlockLight,
+			SkyLightArray:       protocol.PrefixedArray[protocol.LightArray]{Content: []protocol.LightArray{}},
+			BlockLightArray:     protocol.PrefixedArray[protocol.LightArray]{Content: []protocol.LightArray{}},
+		},
+	}
+}
+
+func SendEmptyChunks(client *Client) {
+	for x := int32(-2); x <= 2; x++ {
+		for z := int32(-2); z <= 2; z++ {
+			chunk := NewEmptyChunk(x, z)
+			client.SendPacket(chunk)
+		}
 	}
 }
