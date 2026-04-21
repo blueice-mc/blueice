@@ -1,9 +1,11 @@
 package protocol
 
-import "io"
+import (
+	"io"
+)
 
 type PacketPlayOutLogin struct {
-	EntityID            VarInt
+	EntityID            int32
 	IsHardcore          bool
 	DimensionNames      PrefixedArray[Identifier]
 	MaxPlayers          VarInt
@@ -15,7 +17,7 @@ type PacketPlayOutLogin struct {
 	DimensionType       VarInt
 	DimensionName       Identifier
 	HashedSeed          int64
-	GameMode            uint8
+	GameMode            int8
 	PreviousGameMode    int8
 	IsDebug             bool
 	IsFlat              bool
@@ -28,12 +30,12 @@ type PacketPlayOutLogin struct {
 }
 
 func (p *PacketPlayOutLogin) ID() VarInt {
-	return 0x30
+	return 0x31
 }
 
 func (p *PacketPlayOutLogin) WriteTo(w io.Writer) (int64, error) {
 	total, err := serialize(w, struct {
-		EntityID            VarInt
+		EntityID            int32
 		IsHardcore          bool
 		DimensionNames      PrefixedArray[Identifier]
 		MaxPlayers          VarInt
@@ -45,7 +47,7 @@ func (p *PacketPlayOutLogin) WriteTo(w io.Writer) (int64, error) {
 		DimensionType       VarInt
 		DimensionName       Identifier
 		HashedSeed          int64
-		GameMode            uint8
+		GameMode            int8
 		PreviousGameMode    int8
 		IsDebug             bool
 		IsFlat              bool

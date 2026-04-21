@@ -77,23 +77,21 @@ func writeField(w io.Writer, v reflect.Value) (int64, error) {
 
 	switch v.Kind() {
 	case reflect.Bool:
-		return WriteBool(w, v.Interface().(bool))
+		return WriteBool(w, v.Bool())
 	case reflect.Uint8:
-		return WriteUint8(w, v.Interface().(uint8))
+		return WriteUint8(w, uint8(v.Uint()))
 	case reflect.Int8:
-		return WriteInt8(w, v.Interface().(int8))
+		return WriteInt8(w, int8(v.Int()))
 	case reflect.Int16:
-		return WriteInt16(w, v.Interface().(int16))
+		return WriteInt16(w, int16(v.Int()))
 	case reflect.Int32:
-		return WriteInt32(w, v.Interface().(int32))
+		return WriteInt32(w, int32(v.Int()))
 	case reflect.Int64:
-		return WriteInt64(w, v.Interface().(int64))
+		return WriteInt64(w, v.Int())
 	case reflect.Float32:
-		return WriteFloat32(w, v.Interface().(float32))
+		return WriteFloat32(w, float32(v.Float()))
 	case reflect.Float64:
-		return WriteFloat64(w, v.Interface().(float64))
-	case reflect.Func:
-		return 0, nil
+		return WriteFloat64(w, v.Float())
 	case reflect.String:
 		return WriteString(w, v.String())
 	default:

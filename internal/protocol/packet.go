@@ -16,6 +16,6 @@ type ClientboundPacket interface {
 	Packet
 }
 
-func WritePacket(w io.Writer, packet *ClientboundPacket) (int64, error) {
+func WritePacket(w io.Writer, packet ClientboundPacket) (int64, error) {
 	return serialize(w, packet)
 }

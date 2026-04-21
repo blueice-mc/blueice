@@ -55,7 +55,7 @@ func StartConfiguration(client *Client) {
 	}
 
 	if err := client.SendPacket(&brandPacket); err != nil {
-		log.Println("Error while sending brand", err)
+		log.Println("Error while sending brand: ", err)
 		return
 	}
 
@@ -82,7 +82,7 @@ func SendRegistryPackets(client *Client) {
 	}
 
 	if err := client.SendPacket(&clockPacket); err != nil {
-		log.Println("Error while sending clock", err)
+		log.Println("Error while sending clock: ", err)
 		return
 	}
 
@@ -134,7 +134,7 @@ func SendRegistryPackets(client *Client) {
 	}
 
 	if err := client.SendPacket(overworldPacket); err != nil {
-		log.Println("Error while sending dimension_type", err)
+		log.Println("Error while sending dimension_type: ", err)
 	}
 
 	chatData := &defs.ChatType{
@@ -164,7 +164,7 @@ func SendRegistryPackets(client *Client) {
 	}
 
 	if err := client.SendPacket(chatPacket); err != nil {
-		log.Println("Error while sending chat_type", err)
+		log.Println("Error while sending chat_type: ", err)
 	}
 
 	biomeData := &defs.Biome{
@@ -197,7 +197,7 @@ func SendRegistryPackets(client *Client) {
 	}
 
 	if err := client.SendPacket(biomePacket); err != nil {
-		log.Println("Error while sending biome", err)
+		log.Println("Error while sending biome: ", err)
 	}
 
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_sound_variant"), client.Server.Registries.CatSoundVariant)
@@ -254,7 +254,7 @@ func SendTagUpdate(client *Client) {
 	}
 
 	if err := client.SendPacket(&tagUpdatePacket); err != nil {
-		log.Println("Error while sending tag_update", err)
+		log.Println("Error while sending tag_update: ", err)
 	}
 
 	FinishConfiguration(client)
@@ -263,6 +263,11 @@ func SendTagUpdate(client *Client) {
 func FinishConfiguration(client *Client) {
 	var finishPacket protocol.PacketConfigOutFinish
 	if err := client.SendPacket(&finishPacket); err != nil {
-		log.Println("Error while sending finish_configuration", err)
+		log.Println("Error while sending finish_configuration: ", err)
 	}
+}
+
+func HandleConfigurationAcknowledgement(client *Client, payload []byte) {
+	client.State = 4
+	StartPlay(client)
 }

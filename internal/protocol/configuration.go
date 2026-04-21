@@ -54,3 +54,13 @@ type PacketConfigOutUpdateTags struct {
 func (p *PacketConfigOutUpdateTags) ID() VarInt {
 	return 0x0D
 }
+
+type PacketConfigInAcknowledged struct{}
+
+func (p *PacketConfigInAcknowledged) ID() VarInt {
+	return 0x03
+}
+
+func (p *PacketConfigInAcknowledged) ReadFrom(r io.Reader) (int64, error) {
+	return 0, nil
+}

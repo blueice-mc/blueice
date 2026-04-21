@@ -86,7 +86,7 @@ func (client *Client) SendPacket(packet protocol.ClientboundPacket) error {
 		return err
 	}
 
-	if _, err := protocol.WritePacket(&buffer, &packet); err != nil {
+	if _, err := protocol.WritePacket(&buffer, packet); err != nil {
 		return err
 	}
 
