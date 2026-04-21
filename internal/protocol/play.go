@@ -84,3 +84,38 @@ func (p *PacketPlayOutLogin) WriteTo(w io.Writer) (int64, error) {
 	total += n
 	return total, err
 }
+
+type PacketPlayOutGameEvent struct {
+	Event uint8
+	Value float32
+}
+
+func (p *PacketPlayOutGameEvent) ID() VarInt {
+	return 0x26
+}
+
+type PacketPlayOutLevelChunkWithLight struct {
+	ChunkX int32
+	ChunkZ int32
+}
+
+func (p *PacketPlayOutLevelChunkWithLight) ID() VarInt {
+	return 0x2C
+}
+
+type PacketPlayOutPlayerPosition struct {
+	TeleportID VarInt
+	X          float64
+	Y          float64
+	Z          float64
+	VelocityX  float64
+	VelocityY  float64
+	VelocityZ  float64
+	Yaw        float32
+	Pitch      float32
+	Flags      int32
+}
+
+func (p *PacketPlayOutPlayerPosition) ID() VarInt {
+	return 0x48
+}

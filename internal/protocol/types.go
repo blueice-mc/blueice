@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"math"
 	"strings"
 )
 
@@ -496,4 +497,104 @@ type NBTValue struct {
 
 func (v *NBTValue) WriteTo(w io.Writer) (int64, error) {
 	return nbt.WriteNBT(w, v.Value)
+}
+
+type BitSet struct {
+	content []int64
+}
+
+func (b *BitSet) Set(index int32) {
+	indexInLong := index % 64
+	longIndex := index / 64
+	if int32(len(b.content)) <= longIndex {
+		b.content = append(b.content, 0)
+	}
+	b.content[longIndex] |= 1 << indexInLong
+}
+
+func (b *BitSet) SetRange(start, end int32) {
+	for i := start; i <= end; i++ {
+		b.Set(i)
+	}
+}
+
+func (b *BitSet) Get(index int32) bool {
+	indexInLong := index % 64
+	longIndex := index / 64
+	if int32(len(b.content)) <= longIndex {
+		return false
+	}
+	return (b.content[longIndex]>>indexInLong)&1 == 1
+}
+
+func (b *BitSet) WriteTo(w io.Writer) (int64, error) {
+	length := VarInt(len(b.content))
+	total, err := length.WriteTo(w)
+	if err != nil {
+		return total, err
+	}
+
+	for _, long := range b.content {
+		n, err := WriteInt64(w, long)
+		total += n
+		if err != nil {
+			return total, err
+		}
+	}
+
+	return total, nil
+}
+
+type Heightmap struct {
+	Type        VarInt
+	Data        [256]uint16
+	WorldHeight uint16
+}
+
+func (h *Heightmap) Set(x, z int, height uint16) {
+	h.Data[x+z*16] = height
+}
+
+func (h *Heightmap) Get(x, z int) uint16 {
+	return h.Data[x+z*16]
+}
+
+func (h *Heightmap) WriteTo(w io.Writer) (int64, error) {
+	total := int64(0)
+
+	bitsPerEntry := int(math.Ceil(math.Log2(float64(h.WorldHeight) + 1)))
+	entriesPerLong := 64 / bitsPerEntry
+	numLongs := VarInt(int32(math.Ceil(float64(len(h.Data)) / float64(entriesPerLong))))
+
+	n, err := h.Type.WriteTo(w)
+	total += n
+	if err != nil {
+		return total, err
+	}
+
+	n, err = numLongs.WriteTo(w)
+	total += n
+	if err != nil {
+		return total, err
+	}
+
+	var buffer int64
+	mask := int64(1<<bitsPerEntry) - 1
+
+	for i, height := range h.Data {
+		bitIndex := (i % entriesPerLong) * bitsPerEntry
+
+		buffer |= (int64(height) & mask) << bitIndex
+
+		if ((i+1)%entriesPerLong) == 0 || i == len(h.Data)-1 {
+			n, err := WriteInt64(w, buffer)
+			total += n
+			if err != nil {
+				return total, err
+			}
+			buffer = 0
+		}
+	}
+
+	return total, nil
 }
