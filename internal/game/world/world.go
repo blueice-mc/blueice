@@ -11,6 +11,9 @@ type World struct {
 	Height        uint16
 	SeaLevel      int16
 	Chunks        map[ChunkPos]*Chunk
+
+	Generator       Generator
+	GeneratorConfig GeneratorConfig
 }
 
 type ChunkPos struct {

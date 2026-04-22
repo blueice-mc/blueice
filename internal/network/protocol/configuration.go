@@ -64,3 +64,11 @@ func (p *PacketConfigInAcknowledged) ID() VarInt {
 func (p *PacketConfigInAcknowledged) ReadFrom(r io.Reader) (int64, error) {
 	return 0, nil
 }
+
+type PacketConfigOutDisconnect struct {
+	Reason NBTValue
+}
+
+func (p *PacketConfigOutDisconnect) ID() VarInt {
+	return 0x02
+}

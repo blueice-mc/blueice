@@ -32,6 +32,47 @@ func NewServer(eventBus *events.EventBus) *Server {
 	return server
 }
 
+// Start starts the game server. It fires the corresponding lifecycle events.
+func (s *Server) Start() error {
+	_, err := s.eventBus.Emit(events.Event{
+		Type:    events.ServerLifecycleStarting,
+		Payload: nil,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// loading logic belongs here
+
+	_, err = s.eventBus.Emit(events.Event{
+		Type: events.ServerLifecycleStarted,
+	})
+
+	return err
+}
+
+// Stop stops the game server. It fires the corresponding lifecycle events.
+func (s *Server) Stop() error {
+	_, err := s.eventBus.Emit(events.Event{
+		Type:    events.ServerLifecycleStopping,
+		Payload: nil,
+	})
+
+	// unloading logic belongs here
+
+	if err != nil {
+		return err
+	}
+
+	_, err = s.eventBus.Emit(events.Event{
+		Type:    events.ServerLifecycleStopped,
+		Payload: nil,
+	})
+
+	return err
+}
+
 // PlayerLogin triggers a LoginEvent and returns if the login was rejected and a reason if the login was rejected.
 func (s *Server) PlayerLogin(profile *entity.PlayerProfile) (bool, string) {
 	loginEvent := api.SerializedLoginEvent{

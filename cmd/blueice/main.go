@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/blueice-mc/blueice/internal/config"
+	"github.com/blueice-mc/blueice/internal/events"
 	"github.com/blueice-mc/blueice/internal/mojang"
 	"github.com/blueice-mc/blueice/internal/network/server"
 )
@@ -30,8 +31,10 @@ func main() {
 		log.Fatal("Could not read or create server config", err)
 	}
 
-	minecraftServer := server.NewMinecraftServer(serverConfig, path)
-	err := minecraftServer.Start()
+	eventBus := events.NewBus()
+
+	networkServer := server.NewNetworkServer(serverConfig, path, eventBus)
+	err := networkServer.Start()
 	if err != nil {
 		log.Fatal("Could not start minecraft server", err)
 	}

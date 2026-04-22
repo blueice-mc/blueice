@@ -8,7 +8,8 @@ import (
 	"sync"
 
 	"github.com/blueice-mc/blueice/internal/config"
-	"github.com/blueice-mc/blueice/internal/game/entity"
+	"github.com/blueice-mc/blueice/internal/events"
+	"github.com/blueice-mc/blueice/internal/game"
 	"github.com/blueice-mc/blueice/internal/game/registry"
 	"github.com/blueice-mc/blueice/internal/mojang"
 )
@@ -22,36 +23,37 @@ type PacketKey struct {
 	PacketID uint32
 }
 
-type MinecraftServer struct {
-	Config config.ServerConfig
-	Path   string
+type NetworkServer struct {
+	Config     config.ServerConfig
+	Path       string
+	GameServer *game.Server
 
 	mu              sync.RWMutex
 	Clients         []*Client
-	Players         []*entity.Player
 	PacketListeners map[PacketKey][]PacketListener
 	Registries      registry.Registries
 }
 
-func NewMinecraftServer(serverConfig config.ServerConfig, path string) *MinecraftServer {
-	minecraftServer := MinecraftServer{
+func NewNetworkServer(serverConfig config.ServerConfig, path string, eventBus *events.EventBus) *NetworkServer {
+	networkServer := NetworkServer{
 		Config:          serverConfig,
 		Path:            path,
+		GameServer:      game.NewServer(eventBus),
 		Clients:         make([]*Client, 0),
 		PacketListeners: make(map[PacketKey][]PacketListener),
 	}
 
-	minecraftServer.RegisterPacketListener(0, 0x00, HandleHandshake)
-	minecraftServer.RegisterPacketListener(1, 0x00, HandleStatusRequest)
-	minecraftServer.RegisterPacketListener(1, 0x01, HandlePingRequest)
-	minecraftServer.RegisterPacketListener(2, 0x00, HandleLoginStart)
-	minecraftServer.RegisterPacketListener(2, 0x03, HandleLoginAcknowledged)
-	minecraftServer.RegisterPacketListener(3, 0x03, HandleConfigurationAcknowledgement)
+	networkServer.RegisterPacketListener(0, 0x00, HandleHandshake)
+	networkServer.RegisterPacketListener(1, 0x00, HandleStatusRequest)
+	networkServer.RegisterPacketListener(1, 0x01, HandlePingRequest)
+	networkServer.RegisterPacketListener(2, 0x00, HandleLoginStart)
+	networkServer.RegisterPacketListener(2, 0x03, HandleLoginAcknowledged)
+	networkServer.RegisterPacketListener(3, 0x03, HandleConfigurationAcknowledgement)
 
-	return &minecraftServer
+	return &networkServer
 }
 
-func (server *MinecraftServer) Start() error {
+func (server *NetworkServer) Start() error {
 	if err := os.Mkdir(server.Path+"/lib", 0755); err == nil {
 		err := mojang.FetchMinecraftData(server.Path + "/lib")
 		if err != nil {
@@ -63,6 +65,12 @@ func (server *MinecraftServer) Start() error {
 
 	if err := server.Registries.LoadAll(server.Path); err != nil {
 		log.Fatal("Failed to load minecraft registries: ", err)
+	}
+
+	log.Println("Starting minecraft server...")
+	err := server.GameServer.Start()
+	if err != nil {
+		log.Fatal("Failed to start minecraft server: ", err)
 	}
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", server.Config.Server.Port))
@@ -87,7 +95,7 @@ func (server *MinecraftServer) Start() error {
 	}
 }
 
-func (server *MinecraftServer) RegisterPacketListener(state int32, packetID uint32, listener func(*Client, []byte)) {
+func (server *NetworkServer) RegisterPacketListener(state int32, packetID uint32, listener func(*Client, []byte)) {
 	key := PacketKey{state, packetID}
 
 	server.mu.Lock()
@@ -95,7 +103,7 @@ func (server *MinecraftServer) RegisterPacketListener(state int32, packetID uint
 	server.mu.Unlock()
 }
 
-func (server *MinecraftServer) onClientConnect(conn net.Conn) {
+func (server *NetworkServer) onClientConnect(conn net.Conn) {
 	client := NewClient(conn, server)
 
 	server.mu.Lock()

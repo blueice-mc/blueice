@@ -38,14 +38,17 @@ func HandleLoginStart(client *Client, payload []byte) {
 
 func HandleLoginAcknowledged(client *Client, payload []byte) {
 	client.Player = &entity.Player{
-		UUID:       client.PendingProfile.UUID,
-		PlayerName: client.PendingProfile.Name,
+		PlayerProfile: entity.PlayerProfile{
+			UUID: client.PendingProfile.UUID,
+			Name: client.PendingProfile.Name,
+		},
 		Connection: client,
 	}
 
-	client.Server.mu.Lock()
-	client.Server.Players = append(client.Server.Players, client.Player)
-	client.Server.mu.Unlock()
+	err := client.Server.GameServer.AddPlayer(client.Player)
+	if err != nil {
+		panic(err)
+	}
 
 	// Switch to configuration state
 	client.State = 3

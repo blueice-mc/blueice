@@ -64,10 +64,3 @@ type PlayerProfile struct {
 	UUID [16]byte
 	Name string
 }
-
-func (p *PlayerProfile) Serialize() api.SerializedGameProfile {
-	return api.SerializedGameProfile{
-		UUID: p.UUID,
-		Name: p.Name,
-	}
-}

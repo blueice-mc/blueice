@@ -13,11 +13,18 @@ type EventBus struct {
 type EventType string
 
 const (
-	PlayerLogin         EventType = "player.login"
-	PlayerJoin          EventType = "player.join"
-	PlayerQuit          EventType = "player.quit"
-	PlayerLoadChunk     EventType = "player.load_chunk"
-	ServerGenerateChunk EventType = "server.generate_chunk"
+	// Player events
+	PlayerLogin     EventType = "player.login"
+	PlayerJoin      EventType = "player.join"
+	PlayerQuit      EventType = "player.quit"
+	PlayerLoadChunk EventType = "player.load_chunk"
+
+	// Server events
+	ServerLifecycleStarting EventType = "server.lifecycle_starting"
+	ServerLifecycleStarted  EventType = "server.lifecycle_started"
+	ServerLifecycleStopping EventType = "server.lifecycle_stopping"
+	ServerLifecycleStopped  EventType = "server.lifecycle_stopped"
+	ServerGenerateChunk     EventType = "server.generate_chunk"
 )
 
 type EventPriority uint8

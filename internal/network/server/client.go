@@ -13,12 +13,12 @@ import (
 type Client struct {
 	Connection     net.Conn
 	State          int32
-	Server         *MinecraftServer
+	Server         *NetworkServer
 	PendingProfile *protocol.GameProfile
 	Player         *entity.Player
 }
 
-func NewClient(conn net.Conn, server *MinecraftServer) *Client {
+func NewClient(conn net.Conn, server *NetworkServer) *Client {
 	return &Client{
 		Connection: conn,
 		State:      0,

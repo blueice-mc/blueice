@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/blueice-mc/blueice/internal/game/defs"
+	"github.com/blueice-mc/blueice/internal/game/entity"
 	"github.com/blueice-mc/blueice/internal/game/registry"
 	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
@@ -39,6 +40,25 @@ func sendRegistryFromMap[T any](client *Client, registryID protocol.Identifier, 
 }
 
 func StartConfiguration(client *Client) {
+
+	cancelled, reason := client.Server.GameServer.PlayerLogin(&entity.PlayerProfile{
+		UUID: client.PendingProfile.UUID,
+		Name: client.PendingProfile.Name,
+	})
+
+	if cancelled {
+		var responsePacket protocol.PacketConfigOutDisconnect
+		responsePacket.Reason = protocol.NBTValue{Value: defs.TextComponent{
+			Text: reason,
+		}}
+
+		if err := client.SendPacket(&responsePacket); err != nil {
+			log.Println("Error while sending login response", err)
+		}
+
+		return
+	}
+
 	brand := "BlueIce"
 	var buf bytes.Buffer
 	length := protocol.VarInt(len(brand))
