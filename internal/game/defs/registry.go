@@ -7,17 +7,19 @@ import (
 )
 
 type IntProvider struct {
-	Type  string `nbt:"type"  json:"type"`
-	Value int32  `nbt:"value" json:"value"`
+	Type         string `nbt:"type"                    json:"type"`
+	Value        *int32 `nbt:"value,omitempty"         json:"value"`
+	MaxInclusive *int32 `nbt:"max_inclusive,omitempty" json:"max_inclusive,omitempty"`
+	MinInclusive *int32 `nbt:"min_inclusive,omitempty" json:"min_inclusive,omitempty"`
 }
 
-type DimensionTypeEntry struct {
+type DimensionType struct {
 	CoordinateScale             float64       `nbt:"coordinate_scale"                json:"coordinate_scale"`
-	HasSkylight                 int8          `nbt:"has_skylight"                    json:"has_skylight"`
-	HasCeiling                  int8          `nbt:"has_ceiling"                     json:"has_ceiling"`
-	HasEnderDragonFight         int8          `nbt:"has_ender_dragon_fight"          json:"has_ender_dragon_fight"`
+	HasSkylight                 bool          `nbt:"has_skylight"                    json:"has_skylight"`
+	HasCeiling                  bool          `nbt:"has_ceiling"                     json:"has_ceiling"`
+	HasEnderDragonFight         bool          `nbt:"has_ender_dragon_fight"          json:"has_ender_dragon_fight"`
 	AmbientLight                float32       `nbt:"ambient_light"                   json:"ambient_light"`
-	HasFixedTime                int8          `nbt:"has_fixed_time"                  json:"has_fixed_time"`
+	HasFixedTime                bool          `nbt:"has_fixed_time"                  json:"has_fixed_time"`
 	FixedTime                   *int64        `nbt:"fixed_time,omitempty"            json:"fixed_time,omitempty"`
 	MonsterSpawnBlockLightLimit int32         `nbt:"monster_spawn_block_light_limit" json:"monster_spawn_block_light_limit"`
 	MonsterSpawnLightLevel      IntProvider   `nbt:"monster_spawn_light_level"       json:"monster_spawn_light_level"`
@@ -25,14 +27,14 @@ type DimensionTypeEntry struct {
 	MinY                        int32         `nbt:"min_y"                           json:"min_y"`
 	Height                      int32         `nbt:"height"                          json:"height"`
 	Infiniburn                  string        `nbt:"infiniburn"                      json:"infiniburn"`
-	Skybox                      string        `nbt:"skybox"                          json:"skybox"`
-	CardinalLight               string        `nbt:"cardinal_light"                  json:"cardinal_light"`
+	Skybox                      string        `nbt:"skybox,omitempty"                json:"skybox,omitempty"`
+	CardinalLight               string        `nbt:"cardinal_light,omitempty"        json:"cardinal_light,omitempty"`
 	Attributes                  EmptyCompound `nbt:"attributes"                      json:"attributes"`
-	DefaultClock                string        `nbt:"default_clock"                   json:"default_clock"`
-	Timelines                   []string      `nbt:"timelines"                       json:"timelines"`
+	DefaultClock                string        `nbt:"default_clock,omitempty"         json:"default_clock,omitempty"`
+	Timelines                   string        `nbt:"timelines"                       json:"timelines"`
 }
 
-type WorldClockEntry struct{}
+type WorldClock struct{}
 type EmptyCompound struct{}
 
 type ChatType struct {
@@ -241,6 +243,33 @@ type Instrument struct {
 	Range       float32       `nbt:"range"         json:"range"`
 	SoundEvent  string        `nbt:"sound_event"   json:"sound_event"`
 	UseDuration float32       `nbt:"use_duration"  json:"use_duration"`
+}
+
+func (ip *IntProvider) UnmarshalJSON(data []byte) error {
+	var num int32
+	if err := json.Unmarshal(data, &num); err == nil {
+		ip.Type = "minecraft:constant"
+		ip.Value = &num
+		return nil
+	}
+
+	var raw struct {
+		Type         string `json:"type"`
+		Value        *int32 `json:"value"`
+		MaxInclusive *int32 `json:"max_inclusive"`
+		MinInclusive *int32 `json:"min_inclusive"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	ip.Type = raw.Type
+	ip.Value = raw.Value
+	ip.MaxInclusive = raw.MaxInclusive
+	ip.MinInclusive = raw.MinInclusive
+
+	return nil
 }
 
 func (b *Biome) UnmarshalJSON(data []byte) error {

@@ -197,13 +197,6 @@ func writeCompound(w io.Writer, v reflect.Value) (int64, error) {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 
-		if field.Kind() == reflect.Ptr {
-			if field.IsNil() {
-				continue
-			}
-			field = deref(field)
-		}
-
 		fieldType := t.Field(i)
 
 		tagName, omitempty := parseTag(fieldType.Tag.Get("nbt"))
@@ -215,6 +208,13 @@ func writeCompound(w io.Writer, v reflect.Value) (int64, error) {
 
 		if omitempty && field.IsZero() {
 			continue
+		}
+
+		if field.Kind() == reflect.Ptr {
+			if field.IsNil() {
+				continue
+			}
+			field = deref(field)
 		}
 
 		n, err := writeNamedTagHeader(w, tagTypeOf(field), tagName)

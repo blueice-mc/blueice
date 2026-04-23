@@ -132,6 +132,35 @@ func LoadTags(dataDir string, registryID protocol.Identifier, idMap map[protocol
 }
 
 func (r *Registries) LoadAll(dataDir string) error {
+	if err := Load[defs.ChatType](dataDir, protocol.NewIdentifierFromPath("chat_type"), &r.ChatType); err != nil {
+		return err
+	}
+
+	if err := Load[defs.WorldClock](dataDir, protocol.NewIdentifierFromPath("world_clock"), &r.WorldClock); err != nil {
+		return err
+	}
+
+	if err := Load[defs.DimensionType](dataDir, protocol.NewIdentifierFromPath("dimension_type"), &r.DimensionType); err != nil {
+		return err
+	}
+
+	if err := Load[defs.Timeline](dataDir, protocol.NewIdentifierFromPath("timeline"), &r.Timeline); err != nil {
+		return err
+	}
+
+	tags, err := LoadTags(dataDir, protocol.NewIdentifierFromPath("timeline"), r.Timeline.IDs)
+	if err != nil {
+		return err
+	}
+
+	for tag, ids := range tags {
+		entry := TagEntry{
+			Name: tag,
+			IDs:  ids,
+		}
+		r.Timeline.Tags = append(r.Timeline.Tags, entry)
+	}
+
 	if err := Load[defs.Biome](dataDir, protocol.NewIdentifierFromPath("worldgen/biome"), &r.Biomes); err != nil {
 		return err
 	}
@@ -192,7 +221,7 @@ func (r *Registries) LoadAll(dataDir string) error {
 		return err
 	}
 
-	tags, err := LoadTags(dataDir, protocol.NewIdentifierFromPath("damage_type"), r.DamageType.IDs)
+	tags, err = LoadTags(dataDir, protocol.NewIdentifierFromPath("damage_type"), r.DamageType.IDs)
 	if err != nil {
 		return err
 	}

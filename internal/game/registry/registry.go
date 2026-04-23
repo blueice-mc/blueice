@@ -17,6 +17,10 @@ type Registry[T any] struct {
 }
 
 type Registries struct {
+	ChatType              Registry[defs.ChatType]
+	WorldClock            Registry[defs.WorldClock]
+	DimensionType         Registry[defs.DimensionType]
+	Timeline              Registry[defs.Timeline]
 	Biomes                Registry[defs.Biome]
 	CatSoundVariant       Registry[defs.CatSoundVariant]
 	CatVariant            Registry[defs.CatVariant]

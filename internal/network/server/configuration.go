@@ -9,6 +9,7 @@ import (
 	"github.com/blueice-mc/blueice/internal/game/entity"
 	"github.com/blueice-mc/blueice/internal/game/registry"
 	"github.com/blueice-mc/blueice/internal/network/protocol"
+	"github.com/blueice-mc/blueice/internal/version"
 )
 
 func sendRegistryFromMap[T any](client *Client, registryID protocol.Identifier, registry registry.Registry[T]) error {
@@ -59,7 +60,7 @@ func StartConfiguration(client *Client) {
 		return
 	}
 
-	brand := "BlueIce"
+	brand := "BlueIce " + version.ServerVersion
 	var buf bytes.Buffer
 	length := protocol.VarInt(len(brand))
 	if _, err := length.WriteTo(&buf); err != nil {
@@ -84,143 +85,10 @@ func StartConfiguration(client *Client) {
 }
 
 func SendRegistryPackets(client *Client) {
-
-	// Create overworld packet
-
-	clockPacket := protocol.PacketConfigOutRegistryData{
-		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "world_clock"},
-		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
-			Content: []protocol.RegistryEntry{
-				{
-					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "overworld"},
-					Data: protocol.PrefixedOptional[protocol.NBTValue]{
-						Present: true,
-						Content: protocol.NBTValue{Value: defs.WorldClockEntry{}},
-					},
-				},
-			},
-		},
-	}
-
-	if err := client.SendPacket(&clockPacket); err != nil {
-		log.Println("Error while sending clock: ", err)
-		return
-	}
-
-	overworldData := &defs.DimensionTypeEntry{
-		CoordinateScale:     1.0,
-		HasSkylight:         1,
-		HasCeiling:          0,
-		HasEnderDragonFight: 0,
-		AmbientLight:        0.0,
-
-		HasFixedTime: 0,
-		FixedTime:    nil,
-
-		MonsterSpawnBlockLightLimit: 0,
-		MonsterSpawnLightLevel: defs.IntProvider{
-			Type:  "minecraft:constant",
-			Value: 0,
-		},
-
-		LogicalHeight: 384,
-		MinY:          -64,
-		Height:        384,
-
-		Infiniburn: "#minecraft:infiniburn_overworld",
-
-		Skybox:        "overworld",
-		CardinalLight: "default",
-
-		Attributes: defs.EmptyCompound{},
-
-		DefaultClock: "minecraft:overworld",
-
-		Timelines: []string{},
-	}
-
-	overworldPacket := &protocol.PacketConfigOutRegistryData{
-		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "dimension_type"},
-		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
-			Content: []protocol.RegistryEntry{
-				{
-					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "overworld"},
-					Data: protocol.PrefixedOptional[protocol.NBTValue]{
-						Present: true,
-						Content: protocol.NBTValue{Value: overworldData},
-					},
-				},
-			},
-		},
-	}
-
-	if err := client.SendPacket(overworldPacket); err != nil {
-		log.Println("Error while sending dimension_type: ", err)
-	}
-
-	chatData := &defs.ChatType{
-		Chat: defs.ChatFormat{
-			TranslationKey: "chat.type.text",
-			Parameters:     []string{"sender", "content"},
-		},
-		Narration: defs.ChatFormat{
-			TranslationKey: "chat.type.text.narrate",
-			Parameters:     []string{"sender", "content"},
-		},
-	}
-
-	chatPacket := &protocol.PacketConfigOutRegistryData{
-		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "chat_type"},
-		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
-			Content: []protocol.RegistryEntry{
-				{
-					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "chat"},
-					Data: protocol.PrefixedOptional[protocol.NBTValue]{
-						Present: true,
-						Content: protocol.NBTValue{Value: chatData},
-					},
-				},
-			},
-		},
-	}
-
-	if err := client.SendPacket(chatPacket); err != nil {
-		log.Println("Error while sending chat_type: ", err)
-	}
-
-	/*biomeData := &defs.Biome{
-		HasPrecipitation:    true,
-		Temperature:         0.5,
-		Downfall:            0.5,
-		TemperatureModifier: "none",
-		Effects: defs.BiomeEffects{
-			FogColor:           12638463,
-			SkyColor:           7907327,
-			WaterColor:         4159280,
-			WaterFogColor:      329011,
-			GrassColorModifier: "none",
-		},
-	}
-
-	biomePacket := &protocol.PacketConfigOutRegistryData{
-		RegistryID: protocol.Identifier{Namespace: "minecraft", Path: "worldgen/biome"},
-		Entries: protocol.PrefixedArray[protocol.RegistryEntry]{
-			Content: []protocol.RegistryEntry{
-				{
-					EntryID: protocol.Identifier{Namespace: "minecraft", Path: "plains"},
-					Data: protocol.PrefixedOptional[protocol.NBTValue]{
-						Present: true,
-						Content: protocol.NBTValue{Value: biomeData},
-					},
-				},
-			},
-		},
-	}
-
-	if err := client.SendPacket(biomePacket); err != nil {
-		log.Println("Error while sending biome:", err)
-	}*/
-
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chat_type"), client.Server.Registries.ChatType)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("world_clock"), client.Server.Registries.WorldClock)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("dimension_type"), client.Server.Registries.DimensionType)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("timeline"), client.Server.Registries.Timeline)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("worldgen/biome"), client.Server.Registries.Biomes)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_sound_variant"), client.Server.Registries.CatSoundVariant)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_variant"), client.Server.Registries.CatVariant)
@@ -253,6 +121,7 @@ func SendTagUpdate(client *Client) {
 	}
 
 	sources := []registryTagSource{
+		{protocol.Identifier{Namespace: "minecraft", Path: "timeline"}, client.Server.Registries.Timeline.Tags},
 		{protocol.Identifier{Namespace: "minecraft", Path: "damage_type"}, client.Server.Registries.DamageType.Tags},
 		{protocol.Identifier{Namespace: "minecraft", Path: "banner_pattern"}, client.Server.Registries.BannerPattern.Tags},
 	}
