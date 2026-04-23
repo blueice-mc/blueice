@@ -188,8 +188,8 @@ func SendRegistryPackets(client *Client) {
 		log.Println("Error while sending chat_type: ", err)
 	}
 
-	biomeData := &defs.Biome{
-		HasPrecipitation:    1,
+	/*biomeData := &defs.Biome{
+		HasPrecipitation:    true,
 		Temperature:         0.5,
 		Downfall:            0.5,
 		TemperatureModifier: "none",
@@ -218,9 +218,10 @@ func SendRegistryPackets(client *Client) {
 	}
 
 	if err := client.SendPacket(biomePacket); err != nil {
-		log.Println("Error while sending biome: ", err)
-	}
+		log.Println("Error while sending biome:", err)
+	}*/
 
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("worldgen/biome"), client.Server.Registries.Biomes)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_sound_variant"), client.Server.Registries.CatSoundVariant)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_variant"), client.Server.Registries.CatVariant)
 	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chicken_sound_variant"), client.Server.Registries.ChickenSoundVariant)

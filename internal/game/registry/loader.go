@@ -132,6 +132,10 @@ func LoadTags(dataDir string, registryID protocol.Identifier, idMap map[protocol
 }
 
 func (r *Registries) LoadAll(dataDir string) error {
+	if err := Load[defs.Biome](dataDir, protocol.NewIdentifierFromPath("worldgen/biome"), &r.Biomes); err != nil {
+		return err
+	}
+
 	if err := Load[defs.CatSoundVariant](dataDir, protocol.NewIdentifierFromPath("cat_sound_variant"), &r.CatSoundVariant); err != nil {
 		return err
 	}

@@ -1,29 +1,35 @@
 package defs
 
+import (
+	"encoding/json"
+	"strconv"
+	"strings"
+)
+
 type IntProvider struct {
 	Type  string `nbt:"type"  json:"type"`
 	Value int32  `nbt:"value" json:"value"`
 }
 
 type DimensionTypeEntry struct {
-	CoordinateScale             float64       `nbt:"coordinate_scale"               json:"coordinate_scale"`
-	HasSkylight                 int8          `nbt:"has_skylight"                   json:"has_skylight"`
-	HasCeiling                  int8          `nbt:"has_ceiling"                    json:"has_ceiling"`
-	HasEnderDragonFight         int8          `nbt:"has_ender_dragon_fight"         json:"has_ender_dragon_fight"`
-	AmbientLight                float32       `nbt:"ambient_light"                  json:"ambient_light"`
-	HasFixedTime                int8          `nbt:"has_fixed_time"                 json:"has_fixed_time"`
-	FixedTime                   *int64        `nbt:"fixed_time,omitempty"           json:"fixed_time,omitempty"`
+	CoordinateScale             float64       `nbt:"coordinate_scale"                json:"coordinate_scale"`
+	HasSkylight                 int8          `nbt:"has_skylight"                    json:"has_skylight"`
+	HasCeiling                  int8          `nbt:"has_ceiling"                     json:"has_ceiling"`
+	HasEnderDragonFight         int8          `nbt:"has_ender_dragon_fight"          json:"has_ender_dragon_fight"`
+	AmbientLight                float32       `nbt:"ambient_light"                   json:"ambient_light"`
+	HasFixedTime                int8          `nbt:"has_fixed_time"                  json:"has_fixed_time"`
+	FixedTime                   *int64        `nbt:"fixed_time,omitempty"            json:"fixed_time,omitempty"`
 	MonsterSpawnBlockLightLimit int32         `nbt:"monster_spawn_block_light_limit" json:"monster_spawn_block_light_limit"`
-	MonsterSpawnLightLevel      IntProvider   `nbt:"monster_spawn_light_level"      json:"monster_spawn_light_level"`
-	LogicalHeight               int32         `nbt:"logical_height"                 json:"logical_height"`
-	MinY                        int32         `nbt:"min_y"                          json:"min_y"`
-	Height                      int32         `nbt:"height"                         json:"height"`
-	Infiniburn                  string        `nbt:"infiniburn"                     json:"infiniburn"`
-	Skybox                      string        `nbt:"skybox"                         json:"skybox"`
-	CardinalLight               string        `nbt:"cardinal_light"                 json:"cardinal_light"`
-	Attributes                  EmptyCompound `nbt:"attributes"                   json:"attributes"`
-	DefaultClock                string        `nbt:"default_clock"                  json:"default_clock"`
-	Timelines                   []string      `nbt:"timelines"                      json:"timelines"`
+	MonsterSpawnLightLevel      IntProvider   `nbt:"monster_spawn_light_level"       json:"monster_spawn_light_level"`
+	LogicalHeight               int32         `nbt:"logical_height"                  json:"logical_height"`
+	MinY                        int32         `nbt:"min_y"                           json:"min_y"`
+	Height                      int32         `nbt:"height"                          json:"height"`
+	Infiniburn                  string        `nbt:"infiniburn"                      json:"infiniburn"`
+	Skybox                      string        `nbt:"skybox"                          json:"skybox"`
+	CardinalLight               string        `nbt:"cardinal_light"                  json:"cardinal_light"`
+	Attributes                  EmptyCompound `nbt:"attributes"                      json:"attributes"`
+	DefaultClock                string        `nbt:"default_clock"                   json:"default_clock"`
+	Timelines                   []string      `nbt:"timelines"                       json:"timelines"`
 }
 
 type WorldClockEntry struct{}
@@ -40,19 +46,21 @@ type ChatFormat struct {
 }
 
 type Biome struct {
-	HasPrecipitation    int8         `nbt:"has_precipitation"    json:"has_precipitation"`
+	HasPrecipitation    bool         `nbt:"has_precipitation"    json:"has_precipitation"`
 	Temperature         float32      `nbt:"temperature"          json:"temperature"`
 	Downfall            float32      `nbt:"downfall"             json:"downfall"`
 	Effects             BiomeEffects `nbt:"effects"              json:"effects"`
-	TemperatureModifier string       `nbt:"temperature_modifier" json:"temperature_modifier"`
+	TemperatureModifier string       `nbt:"temperature_modifier,omitempty" json:"temperature_modifier,omitempty"`
 }
 
 type BiomeEffects struct {
-	FogColor           int32  `nbt:"fog_color"            json:"fog_color"`
+	FogColor           *int32 `nbt:"fog_color,omitempty"            json:"fog_color,omitempty"`
 	SkyColor           int32  `nbt:"sky_color"            json:"sky_color"`
 	WaterColor         int32  `nbt:"water_color"          json:"water_color"`
-	WaterFogColor      int32  `nbt:"water_fog_color"      json:"water_fog_color"`
-	GrassColorModifier string `nbt:"grass_color_modifier" json:"grass_color_modifier"`
+	WaterFogColor      *int32 `nbt:"water_fog_color,omitempty"      json:"water_fog_color,omitempty"`
+	GrassColor         *int32 `nbt:"grass_color,omitempty" json:"grass_color,omitempty"`
+	FoliageColor       *int32 `nbt:"foliage_color,omitempty" json:"foliage_color,omitempty"`
+	GrassColorModifier string `nbt:"grass_color_modifier,omitempty" json:"grass_color_modifier,omitempty"`
 }
 
 type SpawnCondition struct {
@@ -233,4 +241,85 @@ type Instrument struct {
 	Range       float32       `nbt:"range"         json:"range"`
 	SoundEvent  string        `nbt:"sound_event"   json:"sound_event"`
 	UseDuration float32       `nbt:"use_duration"  json:"use_duration"`
+}
+
+func (b *Biome) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		HasPrecipitation    bool    `json:"has_precipitation"`
+		Temperature         float32 `json:"temperature"`
+		Downfall            float32 `json:"downfall"`
+		TemperatureModifier string  `json:"temperature_modifier"`
+
+		Attributes *struct {
+			SkyColor string `json:"minecraft:visual/sky_color"`
+			FogColor string `json:"minecraft:visual/fog_color"`
+		} `json:"attributes"`
+
+		Effects struct {
+			WaterColor         string `json:"water_color"`
+			WaterFogColor      string `json:"water_fog_color"`
+			GrassColor         string `json:"grass_color"`
+			FoliageColor       string `json:"foliage_color"`
+			GrassColorModifier string `json:"grass_color_modifier"`
+
+			SkyColor string `json:"sky_color"`
+			FogColor string `json:"fog_color"`
+		} `json:"effects"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	b.HasPrecipitation = raw.HasPrecipitation
+	b.Temperature = raw.Temperature
+	b.Downfall = raw.Downfall
+
+	if raw.TemperatureModifier != "" {
+		b.TemperatureModifier = raw.TemperatureModifier
+	}
+
+	if raw.Attributes != nil {
+		b.Effects.SkyColor = hexToInt32(raw.Attributes.SkyColor)
+		if raw.Attributes.FogColor != "" {
+			val := hexToInt32(raw.Attributes.FogColor)
+			b.Effects.FogColor = &val
+		}
+	} else {
+		b.Effects.SkyColor = hexToInt32(raw.Effects.SkyColor)
+		if raw.Effects.FogColor != "" {
+			val := hexToInt32(raw.Effects.FogColor)
+			b.Effects.FogColor = &val
+		}
+	}
+
+	b.Effects.WaterColor = hexToInt32(raw.Effects.WaterColor)
+
+	if raw.Effects.WaterFogColor != "" {
+		val := hexToInt32(raw.Effects.WaterFogColor)
+		b.Effects.WaterFogColor = &val
+	}
+
+	if raw.Effects.GrassColorModifier != "" {
+		b.Effects.GrassColorModifier = raw.Effects.GrassColorModifier
+	}
+
+	if raw.Effects.GrassColor != "" {
+		val := hexToInt32(raw.Effects.GrassColor)
+		b.Effects.GrassColor = &val
+	}
+	if raw.Effects.FoliageColor != "" {
+		val := hexToInt32(raw.Effects.FoliageColor)
+		b.Effects.FoliageColor = &val
+	}
+
+	return nil
+}
+
+func hexToInt32(hex string) int32 {
+	if hex == "" || !strings.HasPrefix(hex, "#") {
+		return 0
+	}
+	val, _ := strconv.ParseInt(hex[1:], 16, 64)
+	return int32(val)
 }

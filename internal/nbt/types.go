@@ -22,6 +22,8 @@ const (
 
 func getTagType(t reflect.Type) TagType {
 	switch t.Kind() {
+	case reflect.Bool:
+		return TagByte
 	case reflect.Int8:
 		return TagByte
 	case reflect.Int16:

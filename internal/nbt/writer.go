@@ -57,6 +57,8 @@ func tagTypeOf(v reflect.Value) TagType {
 	}
 
 	switch v.Kind() {
+	case reflect.Bool:
+		return TagByte
 	case reflect.Int8:
 		return TagByte
 	case reflect.Int16:
@@ -260,6 +262,14 @@ func parseTag(tag string) (string, bool) {
 // Primitive writers
 
 func writeByte(w io.Writer, v reflect.Value) (int64, error) {
+	if v.Kind() == reflect.Bool {
+		if v.Bool() {
+			return writeByte(w, reflect.ValueOf(1))
+		}
+
+		return writeByte(w, reflect.ValueOf(0))
+	}
+
 	n, err := w.Write([]byte{byte(v.Int())})
 	return int64(n), err
 }

@@ -17,6 +17,7 @@ type Registry[T any] struct {
 }
 
 type Registries struct {
+	Biomes                Registry[defs.Biome]
 	CatSoundVariant       Registry[defs.CatSoundVariant]
 	CatVariant            Registry[defs.CatVariant]
 	ChickenSoundVariant   Registry[defs.ChickenSoundVariant]
