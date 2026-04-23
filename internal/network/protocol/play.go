@@ -94,6 +94,56 @@ func (p *PacketPlayOutGameEvent) ID() VarInt {
 	return 0x26
 }
 
+type Section struct {
+	NonEmptyBlockCount VarInt
+	BlockStates        PalettedContainer
+	Biomes             PalettedContainer
+}
+
+type ContainerType int8
+
+const (
+	BlockStates ContainerType = iota
+	Biomes
+)
+
+type PalettedContainer struct {
+	BitsPerEntry uint8
+	Palette      PrefixedArray[VarInt]
+	Storage      []int64
+
+	SingleValue   VarInt
+	ContainerType ContainerType
+}
+
+func (p *PalettedContainer) WriteTo(w io.Writer) (int64, error) {
+	// single valued for 0 bits per entry
+	if p.BitsPerEntry == 0 {
+		n, err := serialize(w, struct {
+			BitsPerEntry uint8
+			Value        VarInt
+		}{
+			BitsPerEntry: 0,
+			Value:        p.SingleValue,
+		})
+		return n, err
+	}
+
+	// indirect for 4-8 bits per block state or 1-3 bits per biome
+	if (4 <= p.BitsPerEntry && p.BitsPerEntry <= 8 && p.ContainerType == BlockStates) || (1 <= p.BitsPerEntry && p.BitsPerEntry <= 3 && p.ContainerType == Biomes) {
+		total, err := p.Palette.WriteTo(w)
+		if err != nil {
+			return total, err
+		}
+		n, err := serialize(w, p.Storage)
+		total += n
+		return total, err
+	}
+
+	// direct for everything else
+	return serialize(w, p.Storage)
+}
+
 type BlockEntity struct {
 	PackedXZ uint8
 	Y        int16

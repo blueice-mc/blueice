@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -17,10 +16,13 @@ type GeneratorConfig struct {
 }
 
 type Generator interface {
-	Generate(x, z int32, config *GeneratorConfig) *Chunk
+	Generate(x, z int32) *Chunk
 }
 
-type FlatGenerator struct{}
+type FlatGenerator struct {
+	Config       *GeneratorConfig
+	ParsedPreset *FlatPreset
+}
 
 type FlatLayer struct {
 	Block string
@@ -30,6 +32,26 @@ type FlatLayer struct {
 type FlatPreset struct {
 	Layers []FlatLayer
 	Biome  string
+}
+
+func NewFlatGenerator(config *GeneratorConfig) (*FlatGenerator, error) {
+	if config.Type != "flat" || config.Preset == "" {
+		panic("invalid generator config")
+	}
+
+	generator := &FlatGenerator{
+		Config: config,
+	}
+
+	preset, err := parseFlatPreset(config.Preset)
+
+	if err != nil {
+		return nil, err
+	}
+
+	generator.ParsedPreset = preset
+
+	return generator, nil
 }
 
 func parseFlatPreset(preset string) (*FlatPreset, error) {
@@ -82,48 +104,24 @@ func parseLayer(layerStr string) (FlatLayer, error) {
 	}, nil
 }
 
-func (g *FlatGenerator) Generate(x, z int32, config *GeneratorConfig) *Chunk {
-	if config.Type != "flat" || config.Preset == "" {
-		panic("invalid generator config")
-	}
-
-	preset, err := parseFlatPreset(config.Preset)
-	if err != nil {
-		log.Println("Failed to parse preset, using default: ", err)
-		preset = &FlatPreset{
-			Layers: []FlatLayer{
-				{
-					Block: "minecraft:bedrock",
-					Count: 1,
-				},
-				{
-					Block: "minecraft:dirt",
-					Count: 62,
-				},
-				{
-					Block: "minecraft:grass_block",
-					Count: 1,
-				},
-			},
-			Biome: "minecraft:plains",
-		}
-	}
+func (g *FlatGenerator) Generate(x, z int32) *Chunk {
+	preset := g.ParsedPreset
 
 	chunk := Chunk{
 		Position: ChunkPos{
 			X: x,
 			Z: z,
 		},
-		Height:   config.Height,
-		MinY:     config.MinY,
-		Sections: make([]Section, config.Height/16),
+		Height:   g.Config.Height,
+		MinY:     g.Config.MinY,
+		Sections: make([]Section, g.Config.Height/16),
 	}
 
 	for i := range chunk.Sections {
 		chunk.Sections[i] = Section{}
 	}
 
-	currentY := config.MinY
+	currentY := g.Config.MinY
 
 	for _, layer := range preset.Layers {
 		stateId := block.BlockStates[layer.Block]

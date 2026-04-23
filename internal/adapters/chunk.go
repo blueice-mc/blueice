@@ -17,6 +17,10 @@ func NewChunkAdapter(eventBus *events.EventBus) *ChunkAdapter {
 	}
 }
 
+func calculateChunkContent(s *api.SerializedChunk) [4096]uint32 {
+
+}
+
 func constructPacket(s *api.SerializedChunk) protocol.PacketPlayOutLevelChunkWithLight {
 	return protocol.PacketPlayOutLevelChunkWithLight{
 		ChunkX: s.X,

@@ -8,9 +8,7 @@ import (
 	"sync"
 
 	"github.com/blueice-mc/blueice/internal/config"
-	"github.com/blueice-mc/blueice/internal/events"
 	"github.com/blueice-mc/blueice/internal/game"
-	"github.com/blueice-mc/blueice/internal/game/registry"
 	"github.com/blueice-mc/blueice/internal/mojang"
 )
 
@@ -31,14 +29,13 @@ type NetworkServer struct {
 	mu              sync.RWMutex
 	Clients         []*Client
 	PacketListeners map[PacketKey][]PacketListener
-	Registries      registry.Registries
 }
 
-func NewNetworkServer(serverConfig config.ServerConfig, path string, eventBus *events.EventBus) *NetworkServer {
+func NewNetworkServer(serverConfig config.ServerConfig, path string, gameServer *game.Server) *NetworkServer {
 	networkServer := NetworkServer{
 		Config:          serverConfig,
 		Path:            path,
-		GameServer:      game.NewServer(eventBus),
+		GameServer:      gameServer,
 		Clients:         make([]*Client, 0),
 		PacketListeners: make(map[PacketKey][]PacketListener),
 	}
@@ -61,16 +58,6 @@ func (server *NetworkServer) Start() error {
 		}
 	} else if !os.IsExist(err) {
 		log.Fatal("Failed to create minecraft server lib directory: ", err)
-	}
-
-	if err := server.Registries.LoadAll(server.Path); err != nil {
-		log.Fatal("Failed to load minecraft registries: ", err)
-	}
-
-	log.Println("Starting minecraft server...")
-	err := server.GameServer.Start()
-	if err != nil {
-		log.Fatal("Failed to start minecraft server: ", err)
 	}
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", server.Config.Server.Port))

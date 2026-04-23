@@ -7,6 +7,7 @@ import (
 
 	"github.com/blueice-mc/blueice/internal/config"
 	"github.com/blueice-mc/blueice/internal/events"
+	"github.com/blueice-mc/blueice/internal/game"
 	"github.com/blueice-mc/blueice/internal/mojang"
 	"github.com/blueice-mc/blueice/internal/network/server"
 )
@@ -33,9 +34,17 @@ func main() {
 
 	eventBus := events.NewBus()
 
-	networkServer := server.NewNetworkServer(serverConfig, path, eventBus)
-	err := networkServer.Start()
-	if err != nil {
+	gameServer := game.NewServer(eventBus)
+	if err := gameServer.Start(); err != nil {
 		log.Fatal("Could not start minecraft server", err)
+	}
+
+	// start the game tick loop in a goroutine
+	go gameServer.Run()
+
+	// start the tcp server in the current thread
+	networkServer := server.NewNetworkServer(serverConfig, path, gameServer)
+	if err := networkServer.Start(); err != nil {
+		log.Fatal("Could not start TCP server", err)
 	}
 }

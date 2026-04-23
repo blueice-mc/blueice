@@ -20,6 +20,7 @@ const (
 	PlayerLoadChunk EventType = "player.load_chunk"
 
 	// Server events
+	ServerTick              EventType = "server.tick"
 	ServerLifecycleStarting EventType = "server.lifecycle_starting"
 	ServerLifecycleStarted  EventType = "server.lifecycle_started"
 	ServerLifecycleStopping EventType = "server.lifecycle_stopping"

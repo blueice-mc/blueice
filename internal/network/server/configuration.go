@@ -85,29 +85,29 @@ func StartConfiguration(client *Client) {
 }
 
 func SendRegistryPackets(client *Client) {
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chat_type"), client.Server.Registries.ChatType)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("world_clock"), client.Server.Registries.WorldClock)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("dimension_type"), client.Server.Registries.DimensionType)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("timeline"), client.Server.Registries.Timeline)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("worldgen/biome"), client.Server.Registries.Biomes)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_sound_variant"), client.Server.Registries.CatSoundVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_variant"), client.Server.Registries.CatVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chicken_sound_variant"), client.Server.Registries.ChickenSoundVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chicken_variant"), client.Server.Registries.ChickenVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cow_sound_variant"), client.Server.Registries.CowSoundVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cow_variant"), client.Server.Registries.CowVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("pig_sound_variant"), client.Server.Registries.PigSoundVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("pig_variant"), client.Server.Registries.PigVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("wolf_sound_variant"), client.Server.Registries.WolfSoundVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("wolf_variant"), client.Server.Registries.WolfVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("frog_variant"), client.Server.Registries.FrogVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("painting_variant"), client.Server.Registries.PaintingVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("zombie_nautilus_variant"), client.Server.Registries.ZombieNautilusVariant)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("damage_type"), client.Server.Registries.DamageType)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("trim_material"), client.Server.Registries.TrimMaterial)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("jukebox_song"), client.Server.Registries.JukeboxSong)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("banner_pattern"), client.Server.Registries.BannerPattern)
-	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("instrument"), client.Server.Registries.Instrument)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chat_type"), client.Server.GameServer.Registries.ChatType)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("world_clock"), client.Server.GameServer.Registries.WorldClock)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("dimension_type"), client.Server.GameServer.Registries.DimensionType)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("timeline"), client.Server.GameServer.Registries.Timeline)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("worldgen/biome"), client.Server.GameServer.Registries.Biomes)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_sound_variant"), client.Server.GameServer.Registries.CatSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cat_variant"), client.Server.GameServer.Registries.CatVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chicken_sound_variant"), client.Server.GameServer.Registries.ChickenSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("chicken_variant"), client.Server.GameServer.Registries.ChickenVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cow_sound_variant"), client.Server.GameServer.Registries.CowSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("cow_variant"), client.Server.GameServer.Registries.CowVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("pig_sound_variant"), client.Server.GameServer.Registries.PigSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("pig_variant"), client.Server.GameServer.Registries.PigVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("wolf_sound_variant"), client.Server.GameServer.Registries.WolfSoundVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("wolf_variant"), client.Server.GameServer.Registries.WolfVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("frog_variant"), client.Server.GameServer.Registries.FrogVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("painting_variant"), client.Server.GameServer.Registries.PaintingVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("zombie_nautilus_variant"), client.Server.GameServer.Registries.ZombieNautilusVariant)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("damage_type"), client.Server.GameServer.Registries.DamageType)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("trim_material"), client.Server.GameServer.Registries.TrimMaterial)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("jukebox_song"), client.Server.GameServer.Registries.JukeboxSong)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("banner_pattern"), client.Server.GameServer.Registries.BannerPattern)
+	sendRegistryFromMap(client, protocol.NewIdentifierFromPath("instrument"), client.Server.GameServer.Registries.Instrument)
 
 	SendTagUpdate(client)
 }
@@ -121,9 +121,9 @@ func SendTagUpdate(client *Client) {
 	}
 
 	sources := []registryTagSource{
-		{protocol.Identifier{Namespace: "minecraft", Path: "timeline"}, client.Server.Registries.Timeline.Tags},
-		{protocol.Identifier{Namespace: "minecraft", Path: "damage_type"}, client.Server.Registries.DamageType.Tags},
-		{protocol.Identifier{Namespace: "minecraft", Path: "banner_pattern"}, client.Server.Registries.BannerPattern.Tags},
+		{protocol.Identifier{Namespace: "minecraft", Path: "timeline"}, client.Server.GameServer.Registries.Timeline.Tags},
+		{protocol.Identifier{Namespace: "minecraft", Path: "damage_type"}, client.Server.GameServer.Registries.DamageType.Tags},
+		{protocol.Identifier{Namespace: "minecraft", Path: "banner_pattern"}, client.Server.GameServer.Registries.BannerPattern.Tags},
 	}
 
 	for _, source := range sources {

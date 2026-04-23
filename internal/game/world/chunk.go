@@ -1,6 +1,8 @@
 package world
 
 import (
+	"sync"
+
 	"github.com/blueice-mc/blueice/internal/api"
 )
 
@@ -21,17 +23,26 @@ type Chunk struct {
 	Sections []Section
 	MinY     int16
 	Height   uint16
+
+	mu sync.RWMutex
 }
 
 func (c *Chunk) GetBlockState(xz uint8, y int16) uint32 {
-	return c.Sections[(y-c.MinY)/16].GetBlockState(xz, y%16)
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.Sections[(y-c.MinY)/16].GetBlockState(xz, (y%16+16)%16)
 }
 
 func (c *Chunk) SetBlockState(xz uint8, y int16, state uint32) {
-	c.Sections[(y-c.MinY)/16].SetBlockState(xz, y%16, state)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Sections[(y-c.MinY)/16].SetBlockState(xz, (y%16+16)%16, state)
 }
 
 func (c *Chunk) Serialize() api.SerializedChunk {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	serialized := api.SerializedChunk{
 		X:        c.Position.X,
 		Z:        c.Position.Z,
@@ -51,6 +62,9 @@ func (c *Chunk) Serialize() api.SerializedChunk {
 }
 
 func (c *Chunk) Deserialize(serialized api.SerializedChunk) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.Position = ChunkPos{X: serialized.X, Z: serialized.Z}
 	c.MinY = serialized.MinY
 	c.Height = serialized.Height

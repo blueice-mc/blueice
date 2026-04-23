@@ -16,5 +16,4 @@ type SerializedChunkSection struct {
 type SerializedChunkGenerationEvent struct {
 	Chunk     *SerializedChunk // the generated chunk
 	Generated bool             // if the event handler generated chunk data. if this turns out to be false, a fallback chunk generator will be used.
-
 }
