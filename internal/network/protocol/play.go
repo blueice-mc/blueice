@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"encoding/binary"
 	"io"
 )
 
@@ -29,8 +30,8 @@ type PacketPlayOutLogin struct {
 	EnforcesSecureChat  bool
 }
 
-func (p *PacketPlayOutLogin) ID() VarInt {
-	return 0x31
+func (p *PacketPlayOutLogin) ID() string {
+	return "login"
 }
 
 func (p *PacketPlayOutLogin) WriteTo(w io.Writer) (int64, error) {
@@ -90,8 +91,8 @@ type PacketPlayOutGameEvent struct {
 	Value float32
 }
 
-func (p *PacketPlayOutGameEvent) ID() VarInt {
-	return 0x26
+func (p *PacketPlayOutGameEvent) ID() string {
+	return "game_event"
 }
 
 type Section struct {
@@ -129,19 +130,32 @@ func (p *PalettedContainer) WriteTo(w io.Writer) (int64, error) {
 		return n, err
 	}
 
-	// indirect for 4-8 bits per block state or 1-3 bits per biome
-	if (4 <= p.BitsPerEntry && p.BitsPerEntry <= 8 && p.ContainerType == BlockStates) || (1 <= p.BitsPerEntry && p.BitsPerEntry <= 3 && p.ContainerType == Biomes) {
-		total, err := p.Palette.WriteTo(w)
-		if err != nil {
-			return total, err
-		}
-		n, err := serialize(w, p.Storage)
-		total += n
+	total := int64(0)
+	n, err := w.Write([]byte{p.BitsPerEntry})
+	total += int64(n)
+	if err != nil {
 		return total, err
 	}
 
+	// indirect for 4-8 bits per block state or 1-3 bits per biome
+	if (4 <= p.BitsPerEntry && p.BitsPerEntry <= 8 && p.ContainerType == BlockStates) || (1 <= p.BitsPerEntry && p.BitsPerEntry <= 3 && p.ContainerType == Biomes) {
+		n, err := p.Palette.WriteTo(w)
+		total += n
+		if err != nil {
+			return total, err
+		}
+	}
+
 	// direct for everything else
-	return serialize(w, p.Storage)
+
+	buffer := make([]byte, len(p.Storage)*8)
+	for i, v := range p.Storage {
+		binary.BigEndian.PutUint64(buffer[i*8:], uint64(v))
+	}
+	n, err = w.Write(buffer)
+	total += int64(n)
+
+	return total, err
 }
 
 type BlockEntity struct {
@@ -169,8 +183,8 @@ type PacketPlayOutLevelChunkWithLight struct {
 	LightData     LightData
 }
 
-func (p *PacketPlayOutLevelChunkWithLight) ID() VarInt {
-	return 0x2D
+func (p *PacketPlayOutLevelChunkWithLight) ID() string {
+	return "level_chunk_with_light"
 }
 
 type PacketPlayOutPlayerPosition struct {
@@ -186,14 +200,14 @@ type PacketPlayOutPlayerPosition struct {
 	Flags      int32
 }
 
-func (p *PacketPlayOutPlayerPosition) ID() VarInt {
-	return 0x48
+func (p *PacketPlayOutPlayerPosition) ID() string {
+	return "player_position"
 }
 
 type PacketPlayOutDisconnect struct {
 	Reason NBTValue // text component encoded as NBT
 }
 
-func (p *PacketPlayOutDisconnect) ID() VarInt {
-	return 0x20
+func (p *PacketPlayOutDisconnect) ID() string {
+	return "disconnect"
 }

@@ -15,5 +15,5 @@ func HandleHandshake(client *Client, payload []byte) {
 		return
 	}
 
-	client.State = int32(packet.Intent)
+	client.State = protocol.ClientState(int8(packet.Intent))
 }

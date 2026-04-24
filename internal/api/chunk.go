@@ -11,6 +11,7 @@ type SerializedChunk struct {
 type SerializedChunkSection struct {
 	Y      int16
 	Blocks [4096]uint32
+	Biomes [64]uint32
 }
 
 type SerializedChunkGenerationEvent struct {

@@ -159,6 +159,6 @@ func FinishConfiguration(client *Client) {
 }
 
 func HandleConfigurationAcknowledgement(client *Client, payload []byte) {
-	client.State = 4
+	client.State = protocol.Play
 	StartPlay(client)
 }

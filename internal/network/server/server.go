@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"sync"
 
 	"github.com/blueice-mc/blueice/internal/config"
 	"github.com/blueice-mc/blueice/internal/game"
-	"github.com/blueice-mc/blueice/internal/mojang"
+	"github.com/blueice-mc/blueice/internal/network/protocol"
 )
 
 const MaximumPacketSize = 2097151
@@ -17,7 +16,7 @@ const MaximumPacketSize = 2097151
 type PacketListener func(*Client, []byte)
 
 type PacketKey struct {
-	State    int32
+	State    protocol.ClientState
 	PacketID uint32
 }
 
@@ -40,26 +39,17 @@ func NewNetworkServer(serverConfig config.ServerConfig, path string, gameServer 
 		PacketListeners: make(map[PacketKey][]PacketListener),
 	}
 
-	networkServer.RegisterPacketListener(0, 0x00, HandleHandshake)
-	networkServer.RegisterPacketListener(1, 0x00, HandleStatusRequest)
-	networkServer.RegisterPacketListener(1, 0x01, HandlePingRequest)
-	networkServer.RegisterPacketListener(2, 0x00, HandleLoginStart)
-	networkServer.RegisterPacketListener(2, 0x03, HandleLoginAcknowledged)
-	networkServer.RegisterPacketListener(3, 0x03, HandleConfigurationAcknowledgement)
+	networkServer.RegisterPacketListener(protocol.Handshake, "intention", HandleHandshake)
+	networkServer.RegisterPacketListener(protocol.Status, "status_request", HandleStatusRequest)
+	networkServer.RegisterPacketListener(protocol.Status, "ping_request", HandlePingRequest)
+	networkServer.RegisterPacketListener(protocol.Login, "hello", HandleLoginStart)
+	networkServer.RegisterPacketListener(protocol.Login, "login_acknowledged", HandleLoginAcknowledged)
+	networkServer.RegisterPacketListener(protocol.Configuration, "finish_configuration", HandleConfigurationAcknowledgement)
 
 	return &networkServer
 }
 
 func (server *NetworkServer) Start() error {
-	if err := os.Mkdir(server.Path+"/lib", 0755); err == nil {
-		err := mojang.FetchMinecraftData(server.Path + "/lib")
-		if err != nil {
-			log.Fatal("Failed to fetch minecraft server data from mojang: ", err)
-		}
-	} else if !os.IsExist(err) {
-		log.Fatal("Failed to create minecraft server lib directory: ", err)
-	}
-
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", server.Config.Server.Port))
 	log.Println("Listening on", listener.Addr())
 
@@ -82,8 +72,9 @@ func (server *NetworkServer) Start() error {
 	}
 }
 
-func (server *NetworkServer) RegisterPacketListener(state int32, packetID uint32, listener func(*Client, []byte)) {
-	key := PacketKey{state, packetID}
+func (server *NetworkServer) RegisterPacketListener(state protocol.ClientState, packetName string, listener func(*Client, []byte)) {
+	id := protocol.GetPacketID(state, protocol.Serverbound, packetName)
+	key := PacketKey{state, uint32(id)}
 
 	server.mu.Lock()
 	server.PacketListeners[key] = append(server.PacketListeners[key], listener)

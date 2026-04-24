@@ -13,8 +13,8 @@ type PacketHandshakeIn struct {
 	Intent VarInt
 }
 
-func (h *PacketHandshakeIn) ID() VarInt {
-	return 0x00
+func (h *PacketHandshakeIn) ID() string {
+	return "intention"
 }
 
 func (h *PacketHandshakeIn) ReadFrom(reader io.Reader) (int64, error) {

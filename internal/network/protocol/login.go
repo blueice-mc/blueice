@@ -10,8 +10,8 @@ type PacketLoginInStart struct {
 	UUID [16]byte
 }
 
-func (l *PacketLoginInStart) ID() VarInt {
-	return 0x00
+func (l *PacketLoginInStart) ID() string {
+	return "hello"
 }
 
 func (l *PacketLoginInStart) ReadFrom(r io.Reader) (int64, error) {
@@ -34,14 +34,14 @@ type PacketLoginOutDisconnect struct {
 	Reason string
 }
 
-func (l *PacketLoginOutDisconnect) ID() VarInt {
-	return 0x00
+func (l *PacketLoginOutDisconnect) ID() string {
+	return "login_disconnect"
 }
 
 type PacketLoginOutSuccess struct {
 	Profile GameProfile
 }
 
-func (l *PacketLoginOutSuccess) ID() VarInt {
-	return 0x02
+func (l *PacketLoginOutSuccess) ID() string {
+	return "login_finished"
 }

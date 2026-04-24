@@ -30,8 +30,8 @@ type FlatLayer struct {
 }
 
 type FlatPreset struct {
-	Layers []FlatLayer
-	Biome  string
+	Layers  []FlatLayer
+	BiomeID uint32
 }
 
 func NewFlatGenerator(config *GeneratorConfig) (*FlatGenerator, error) {
@@ -61,7 +61,7 @@ func parseFlatPreset(preset string) (*FlatPreset, error) {
 	}
 
 	layersStr := parts[0]
-	biome := parts[1]
+	//biome := parts[1]
 
 	layerParts := strings.Split(layersStr, ",")
 	layers := make([]FlatLayer, 0, len(layerParts))
@@ -76,7 +76,7 @@ func parseFlatPreset(preset string) (*FlatPreset, error) {
 
 	return &FlatPreset{
 		Layers: layers,
-		Biome:  biome,
+		//Biome:  biome,
 	}, nil
 }
 
@@ -129,6 +129,10 @@ func (g *FlatGenerator) Generate(x, z int32) *Chunk {
 		for xz := uint8(0); uint16(xz) < 0x100; xz++ {
 			for y := currentY; y < currentY+int16(layer.Count); y++ {
 				chunk.SetBlockState(xz, y, stateId)
+
+				if (xz>>4)%4 == 0 && (xz&0xF)%4 == 0 && y%4 == 0 {
+					chunk.SetBiomeAtBlock(xz, y, g.ParsedPreset.BiomeID)
+				}
 			}
 		}
 

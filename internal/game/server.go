@@ -3,6 +3,8 @@ package game
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,7 +29,13 @@ type Server struct {
 }
 
 func NewServer(eventBus *events.EventBus) *Server {
+	path, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+
 	server := &Server{
+		path:        filepath.Dir(path),
 		players:     make(map[[16]byte]*entity.Player),
 		worlds:      make(map[[16]byte]*world.World),
 		eventBus:    eventBus,

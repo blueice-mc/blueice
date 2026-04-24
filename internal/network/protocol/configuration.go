@@ -9,8 +9,8 @@ type PacketConfigOutPluginMessage struct {
 	Message []byte
 }
 
-func (p *PacketConfigOutPluginMessage) ID() VarInt {
-	return 0x01
+func (p *PacketConfigOutPluginMessage) ID() string {
+	return "custom_payload"
 }
 
 type RegistryEntry struct {
@@ -23,14 +23,14 @@ type PacketConfigOutRegistryData struct {
 	Entries    PrefixedArray[RegistryEntry]
 }
 
-func (p *PacketConfigOutRegistryData) ID() VarInt {
-	return 0x07
+func (p *PacketConfigOutRegistryData) ID() string {
+	return "registry_data"
 }
 
 type PacketConfigOutFinish struct{}
 
-func (p *PacketConfigOutFinish) ID() VarInt {
-	return 0x03
+func (p *PacketConfigOutFinish) ID() string {
+	return "finish_configuration"
 }
 
 func (p *PacketConfigOutFinish) WriteTo(w io.Writer) (int64, error) {
@@ -51,14 +51,14 @@ type PacketConfigOutUpdateTags struct {
 	TaggedRegistries PrefixedArray[RegistryTags]
 }
 
-func (p *PacketConfigOutUpdateTags) ID() VarInt {
-	return 0x0D
+func (p *PacketConfigOutUpdateTags) ID() string {
+	return "update_tags"
 }
 
 type PacketConfigInAcknowledged struct{}
 
-func (p *PacketConfigInAcknowledged) ID() VarInt {
-	return 0x03
+func (p *PacketConfigInAcknowledged) ID() string {
+	return "finish_configuration"
 }
 
 func (p *PacketConfigInAcknowledged) ReadFrom(r io.Reader) (int64, error) {
@@ -69,6 +69,6 @@ type PacketConfigOutDisconnect struct {
 	Reason NBTValue
 }
 
-func (p *PacketConfigOutDisconnect) ID() VarInt {
-	return 0x02
+func (p *PacketConfigOutDisconnect) ID() string {
+	return "disconnect"
 }

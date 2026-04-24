@@ -12,7 +12,7 @@ import (
 
 type Client struct {
 	Connection     net.Conn
-	State          int32
+	State          protocol.ClientState
 	Server         *NetworkServer
 	PendingProfile *protocol.GameProfile
 	Player         *entity.Player
@@ -90,7 +90,7 @@ func (client *Client) Handle() {
 func (client *Client) SendPacket(packet protocol.ClientboundPacket) error {
 	var buffer bytes.Buffer
 
-	id := packet.ID()
+	id := protocol.VarInt(protocol.GetPacketID(client.State, protocol.Clientbound, packet.ID()))
 
 	if _, err := id.WriteTo(&buffer); err != nil {
 		return err

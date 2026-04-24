@@ -5,7 +5,7 @@ import (
 )
 
 type Packet interface {
-	ID() VarInt
+	ID() string
 }
 
 type ServerboundPacket interface {

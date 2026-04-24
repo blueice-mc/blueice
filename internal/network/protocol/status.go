@@ -9,26 +9,37 @@ type PacketStatusOut struct {
 	Status string
 }
 
-func (packet *PacketStatusOut) ID() VarInt {
-	return 0x00
+func (packet *PacketStatusOut) ID() string {
+	return "status_response"
 }
 
 func (packet *PacketStatusOut) WriteTo(w io.Writer) (int64, error) {
 	return WriteString(w, packet.Status)
 }
 
-type PacketStatusPing struct {
+type PacketStatusInPing struct {
 	Timestamp int64
 }
 
-func (packet *PacketStatusPing) ID() VarInt {
-	return 0x01
+func (packet *PacketStatusInPing) ReadFrom(r io.Reader) (int64, error) {
+	var buffer [8]byte
+	total, err := r.Read(buffer[:])
+	packet.Timestamp = int64(binary.BigEndian.Uint64(buffer[:]))
+	return int64(total), err
 }
 
-func (packet *PacketStatusPing) WriteTo(w io.Writer) (int64, error) {
-	return 8, binary.Write(w, binary.BigEndian, packet.Timestamp)
+func (packet *PacketStatusInPing) ID() string {
+	return "ping_request"
 }
 
-func (packet *PacketStatusPing) ReadFrom(r io.Reader) (int64, error) {
-	return 8, binary.Read(r, binary.BigEndian, &packet.Timestamp)
+type PacketStatusOutPong struct {
+	Timestamp int64
+}
+
+func (packet *PacketStatusOutPong) ID() string {
+	return "pong_response"
+}
+
+func (packet *PacketStatusOutPong) WriteTo(w io.Writer) (int64, error) {
+	return WriteInt64(w, packet.Timestamp)
 }

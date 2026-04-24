@@ -51,7 +51,7 @@ func HandleLoginAcknowledged(client *Client, payload []byte) {
 	}
 
 	// Switch to configuration state
-	client.State = 3
+	client.State = protocol.Configuration
 
 	// Start the configuration for the client
 	StartConfiguration(client)
