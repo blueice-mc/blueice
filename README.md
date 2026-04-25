@@ -34,4 +34,4 @@ go run cmd/blueice/main.go
 
 ## Credits
 Nano Banana 2 generated the server logo. It features the Go-Gopher design created by Renee French
-under the CC-BY 3.0 license.
+under the CC-BY 4.0 license.
