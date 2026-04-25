@@ -65,6 +65,34 @@ func (s *Server) Start() error {
 		return fmt.Errorf("failed to load registries: %w", err)
 	}
 
+	// preparing flat world
+
+	biomes := make(map[string]uint32)
+	for k, v := range s.Registries.Biomes.IDs {
+		biomes[k.String()] = uint32(v)
+	}
+
+	generator, err := world.NewFlatGenerator(&world.GeneratorConfig{
+		Type:   "flat",
+		Preset: "minecraft:bedrock,63*minecraft:dirt,minecraft:grass_block;minecraft:plains",
+		Height: 384,
+		MinY:   -64,
+	}, biomes)
+
+	if err != nil {
+		return err
+	}
+
+	defaultWorld := world.NewWorld("world", generator, s.eventBus)
+	var uid [16]byte
+	s.worlds[uid] = defaultWorld
+
+	for x := int32(-3); x <= 3; x++ {
+		for z := int32(-3); z <= 3; z++ {
+			defaultWorld.RequestChunkGeneration(x, z, nil)
+		}
+	}
+
 	_, err = s.eventBus.Emit(events.Event{
 		Type: events.ServerLifecycleStarted,
 	})

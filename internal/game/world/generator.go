@@ -34,7 +34,7 @@ type FlatPreset struct {
 	BiomeID uint32
 }
 
-func NewFlatGenerator(config *GeneratorConfig) (*FlatGenerator, error) {
+func NewFlatGenerator(config *GeneratorConfig, biomes map[string]uint32) (*FlatGenerator, error) {
 	if config.Type != "flat" || config.Preset == "" {
 		panic("invalid generator config")
 	}
@@ -43,7 +43,7 @@ func NewFlatGenerator(config *GeneratorConfig) (*FlatGenerator, error) {
 		Config: config,
 	}
 
-	preset, err := parseFlatPreset(config.Preset)
+	preset, err := parseFlatPreset(config.Preset, biomes)
 
 	if err != nil {
 		return nil, err
@@ -54,14 +54,14 @@ func NewFlatGenerator(config *GeneratorConfig) (*FlatGenerator, error) {
 	return generator, nil
 }
 
-func parseFlatPreset(preset string) (*FlatPreset, error) {
+func parseFlatPreset(preset string, biomes map[string]uint32) (*FlatPreset, error) {
 	parts := strings.Split(preset, ";")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid preset format: expected 'layers;biome'")
 	}
 
 	layersStr := parts[0]
-	//biome := parts[1]
+	biome := parts[1]
 
 	layerParts := strings.Split(layersStr, ",")
 	layers := make([]FlatLayer, 0, len(layerParts))
@@ -75,8 +75,8 @@ func parseFlatPreset(preset string) (*FlatPreset, error) {
 	}
 
 	return &FlatPreset{
-		Layers: layers,
-		//Biome:  biome,
+		Layers:  layers,
+		BiomeID: biomes[biome],
 	}, nil
 }
 
@@ -119,6 +119,12 @@ func (g *FlatGenerator) Generate(x, z int32) *Chunk {
 
 	for i := range chunk.Sections {
 		chunk.Sections[i] = Section{}
+
+		for biomeIdx := 0; biomeIdx < 64; biomeIdx++ {
+			chunk.mu.Lock()
+			chunk.Sections[i].Biomes[biomeIdx] = preset.BiomeID
+			chunk.mu.Unlock()
+		}
 	}
 
 	currentY := g.Config.MinY
@@ -126,13 +132,9 @@ func (g *FlatGenerator) Generate(x, z int32) *Chunk {
 	for _, layer := range preset.Layers {
 		stateId := block.BlockStates[layer.Block]
 
-		for xz := uint8(0); uint16(xz) < 0x100; xz++ {
+		for xz := uint16(0); xz < 0x100; xz++ {
 			for y := currentY; y < currentY+int16(layer.Count); y++ {
-				chunk.SetBlockState(xz, y, stateId)
-
-				if (xz>>4)%4 == 0 && (xz&0xF)%4 == 0 && y%4 == 0 {
-					chunk.SetBiomeAtBlock(xz, y, g.ParsedPreset.BiomeID)
-				}
+				chunk.SetBlockState(uint8(xz), y, stateId)
 			}
 		}
 

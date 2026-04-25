@@ -122,11 +122,12 @@ func (w *World) GenerateChunk(pos ChunkPos) (*Chunk, error) {
 		return nil, err
 	}
 
-	payload := modifiedEvent.Payload.(*api.SerializedChunkGenerationEvent)
+	payload := modifiedEvent.Payload.(api.SerializedChunkGenerationEvent)
 
 	var chunk *Chunk
 
 	if !payload.Generated {
+		println("starting generation of chunk at ", pos.X, pos.Z, "")
 		chunk = w.Generator.Generate(pos.X, pos.Z)
 	} else {
 		chunk = &Chunk{}
