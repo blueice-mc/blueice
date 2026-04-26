@@ -17,5 +17,5 @@ type ClientboundPacket interface {
 }
 
 func WritePacket(w io.Writer, packet ClientboundPacket) (int64, error) {
-	return serialize(w, packet)
+	return Serialize(w, packet)
 }

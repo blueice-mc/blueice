@@ -159,7 +159,7 @@ func (p *PrefixedArray[T]) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	for _, element := range p.Content {
-		n, err := serialize(w, element)
+		n, err := Serialize(w, element)
 		size += n
 		if err != nil {
 			return size, err
@@ -204,7 +204,7 @@ func (p *PrefixedOptional[T]) WriteTo(w io.Writer) (int64, error) {
 			return int64(size), err
 		}
 
-		n, err := serialize(w, p.Content)
+		n, err := Serialize(w, p.Content)
 		size += int(n)
 		return int64(size), err
 	}

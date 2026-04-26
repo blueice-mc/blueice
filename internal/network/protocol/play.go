@@ -35,7 +35,7 @@ func (p *PacketPlayOutLogin) ID() string {
 }
 
 func (p *PacketPlayOutLogin) WriteTo(w io.Writer) (int64, error) {
-	total, err := serialize(w, struct {
+	total, err := Serialize(w, struct {
 		EntityID            int32
 		IsHardcore          bool
 		DimensionNames      PrefixedArray[Identifier]
@@ -65,19 +65,19 @@ func (p *PacketPlayOutLogin) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	if p.HasDeathLocation {
-		n, err := serialize(w, p.DeathDimensionName)
+		n, err := Serialize(w, p.DeathDimensionName)
 		total += n
 		if err != nil {
 			return total, err
 		}
-		n, err = serialize(w, p.DeathLocation)
+		n, err = Serialize(w, p.DeathLocation)
 		total += n
 		if err != nil {
 			return total, err
 		}
 	}
 
-	n, err := serialize(w, struct {
+	n, err := Serialize(w, struct {
 		PortalCooldown     VarInt
 		SeaLevel           VarInt
 		EnforcesSecureChat bool
@@ -120,7 +120,7 @@ type PalettedContainer struct {
 func (p *PalettedContainer) WriteTo(w io.Writer) (int64, error) {
 	// single valued for 0 bits per entry
 	if p.BitsPerEntry == 0 {
-		n, err := serialize(w, struct {
+		n, err := Serialize(w, struct {
 			BitsPerEntry uint8
 			Value        VarInt
 		}{
